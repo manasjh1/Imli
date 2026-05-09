@@ -5,9 +5,26 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
     const sectionId = searchParams.get("sectionId")
     const classId = searchParams.get("classId")
 
+    // Fetch single question by ID
+    if (id) {
+      const { data, error } = await supabase
+        .from("questions")
+        .select("*, question_options(*)")
+        .eq("id", id)
+        .single()
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 400 })
+      }
+
+      return NextResponse.json(data)
+    }
+
+    // Fetch multiple questions with filters
     let query = supabase
       .from("questions")
       .select("*, question_options(*)")

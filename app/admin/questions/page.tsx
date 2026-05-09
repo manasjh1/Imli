@@ -24,10 +24,13 @@ import {
   ArrowDownUp,
   Settings,
   Trash2,
-  Loader
+  Loader,
+  Volume2,
+  BookOpen,
+  ImagePlus
 } from "lucide-react"
 
-type QuestionType = "mcq" | "audio" | "image" | "true_false" | "fill_blanks" | "match_columns" | "written" | "sequence" | "custom"
+type QuestionType = "mcq" | "audio" | "image" | "true_false" | "fill_blanks" | "match_columns" | "written" | "sequence" | "custom" | "word_reading" | "paragraph_reading" | "picture_writing"
 
 interface QuestionOption {
   id: string
@@ -59,6 +62,9 @@ const questionTypes = [
   { id: "match_columns", label: "Match These Columns", icon: Columns },
   { id: "written", label: "Written Answer", icon: PenLine },
   { id: "sequence", label: "Arrange in Sequence", icon: ArrowDownUp },
+  { id: "word_reading", label: "Word Reading", icon: Volume2 },
+  { id: "paragraph_reading", label: "Paragraph Reading", icon: BookOpen },
+  { id: "picture_writing", label: "Picture Writing", icon: ImagePlus },
   { id: "custom", label: "Custom Type", icon: Settings },
 ]
 
@@ -70,6 +76,24 @@ const getTypeIcon = (type: QuestionType) => {
 const getTypeLabel = (type: QuestionType) => {
   const found = questionTypes.find(t => t.id === type)
   return found ? found.label : type
+}
+
+const getEditorRoute = (type: QuestionType): string => {
+  const editorRoutes: Record<QuestionType, string> = {
+    mcq: "/admin/questions/mcq",
+    audio: "/admin/questions/audio-question",
+    image: "/admin/questions/image-question",
+    true_false: "/admin/questions/true-false",
+    fill_blanks: "/admin/questions/fill-blanks",
+    match_columns: "/admin/questions/match-columns",
+    written: "/admin/questions/written-answer",
+    sequence: "/admin/questions/arrange-sequence",
+    word_reading: "/admin/questions/word-reading",
+    paragraph_reading: "/admin/questions/paragraph-reading",
+    picture_writing: "/admin/questions/picture-writing",
+    custom: "/admin/questions/custom-type",
+  }
+  return editorRoutes[type] || "/admin/questions"
 }
 
 export default function QuestionsPage() {
@@ -128,6 +152,9 @@ export default function QuestionsPage() {
         match_columns: "/admin/questions/match-columns",
         written: "/admin/questions/written-answer",
         sequence: "/admin/questions/arrange-sequence",
+        word_reading: "/admin/questions/word-reading",
+        paragraph_reading: "/admin/questions/paragraph-reading",
+        picture_writing: "/admin/questions/picture-writing",
         custom: "/admin/questions/custom-type",
       }
       
@@ -435,16 +462,25 @@ export default function QuestionsPage() {
                   {/* Questions */}
                   {section.questions && section.questions.length > 0 ? (
                     section.questions.map((question, questionIndex) => (
-                      <Card key={question.id} className="border border-border hover:shadow-md transition-shadow duration-200">
+                      <Card 
+                        key={question.id} 
+                        className="border border-border hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer group"
+                        onClick={() => router.push(`${getEditorRoute(question.type)}?questionId=${question.id}&sectionId=${section.id}`)}
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex gap-3 flex-1">
                               <span className="text-sm font-semibold text-muted-foreground min-w-[24px]">
                                 {questionIndex + 1}.
                               </span>
-                              <p className="text-foreground text-sm sm:text-base">
-                                {question.text}
-                              </p>
+                              <div className="flex-1">
+                                <p className="text-foreground text-sm sm:text-base group-hover:text-primary transition-colors">
+                                  {question.text}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Click to edit
+                                </p>
+                              </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               {(() => {
@@ -459,7 +495,10 @@ export default function QuestionsPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDeleteQuestion(question.id, section.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteQuestion(question.id, section.id)
+                                }}
                                 className="hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <Trash2 className="w-4 h-4" />

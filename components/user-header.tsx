@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Globe, LogOut, ChevronDown } from "lucide-react"
-import { useLanguage, LANGUAGES, type Language } from "@/lib/i18n"
+import { LogOut, ChevronDown } from "lucide-react"
+import { useLanguage } from "@/lib/i18n"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,7 +50,7 @@ function getAvatarColor(name: string): string {
 }
 
 export function UserHeader({ className = "", showLogo = true }: UserHeaderProps) {
-  const { language, setLanguage, t, dir } = useLanguage()
+  const { t, dir } = useLanguage()
   const [userName, setUserName] = useState("")
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
@@ -69,10 +69,6 @@ export function UserHeader({ className = "", showLogo = true }: UserHeaderProps)
     sessionStorage.removeItem("userName")
     localStorage.removeItem("imli_language")
     router.push("/login")
-  }
-
-  const handleLanguageChange = (lang: Language) => {
-    setLanguage(lang)
   }
 
   if (!mounted) {
@@ -106,35 +102,6 @@ export function UserHeader({ className = "", showLogo = true }: UserHeaderProps)
 
       {/* User Section */}
       <div className={`flex items-center gap-3 sm:gap-4 ${!showLogo ? 'ms-auto' : ''}`}>
-        {/* Language Selector */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2 text-xs sm:text-sm"
-            >
-              <Globe className="w-4 h-4" />
-              <span className="hidden sm:inline">{LANGUAGES[language].nativeName}</span>
-              <ChevronDown className="w-3 h-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align={dir === "rtl" ? "start" : "end"} className="min-w-[140px]">
-            {(Object.keys(LANGUAGES) as Language[]).map((lang) => (
-              <DropdownMenuItem
-                key={lang}
-                onClick={() => handleLanguageChange(lang)}
-                className={`cursor-pointer ${language === lang ? "bg-accent" : ""}`}
-              >
-                <span className="flex-1">{LANGUAGES[lang].nativeName}</span>
-                {language === lang && (
-                  <span className="text-primary text-xs">&#10003;</span>
-                )}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         {/* User Avatar & Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
