@@ -69,7 +69,7 @@ export default function TestPage() {
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{t.test.selectClass}</h2>
           <p className="text-lg sm:text-xl text-muted-foreground">
             {language === 'en' && 'Choose your class to begin the quiz and test your knowledge'}
-            {language === 'te' && 'క్విజ్ ప్రారంభించడానికి మీ తరగతిని ఎంచుకోండి'}
+            {language === 'ta' && 'வினாடி வினா தொடங்க உங்கள் வகுப்பைத் தேர்ந்தெடுக்கவும்'}
             {language === 'ur' && 'کوئز شروع کرنے کے لیے اپنی جماعت منتخب کریں'}
           </p>
         </div>

@@ -136,10 +136,10 @@
     margin-inline-end: 0.5rem;
   }
   
-  /* Telugu and Urdu font support */
+  /* Tamil and Urdu font support */
   @font-face {
-    font-family: 'Noto Sans Telugu';
-    src: url('https://fonts.gstatic.com/s/notosanstelugu/v26/0FlxVOGZlE2Rrtr-HmgkMWJNjJ5_aSwg.woff2') format('woff2');
+    font-family: 'Noto Sans Tamil';
+    src: url('https://fonts.gstatic.com/s/notosanstamil/v27/ieVc2YdFI3GCY6SyQy1KfStzYKZgzN1z4LKDbeZce-0429tBManUktuex7vGo70R.woff2') format('woff2');
     font-weight: 400;
     font-display: swap;
   }
@@ -151,8 +151,8 @@
     font-display: swap;
   }
   
-  html[lang="te"] body {
-    font-family: 'Noto Sans Telugu', 'Geist', sans-serif;
+  html[lang="ta"] body {
+    font-family: 'Noto Sans Tamil', 'Geist', sans-serif;
   }
   
   html[lang="ur"] body {

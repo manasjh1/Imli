@@ -12,7 +12,7 @@ import { useLanguage } from '@/lib/i18n'
 interface QuestionOption {
   id: string
   text: string
-  text_te?: string
+  text_ta?: string
   text_ur?: string
   is_correct: boolean
 }
@@ -20,7 +20,7 @@ interface QuestionOption {
 interface Question {
   id: string
   text: string
-  text_te?: string
+  text_ta?: string
   text_ur?: string
   type: string
   subject_id: string
@@ -50,8 +50,8 @@ export function QuizContent() {
   const [className, setClassName] = useState('')
 
   // Get localized text based on current language
-  const getLocalizedText = (item: { text: string; text_te?: string; text_ur?: string }) => {
-    if (language === 'te' && item.text_te) return item.text_te
+  const getLocalizedText = (item: { text: string; text_ta?: string; text_ur?: string }) => {
+    if (language === 'ta' && item.text_ta) return item.text_ta
     if (language === 'ur' && item.text_ur) return item.text_ur
     return item.text
   }
@@ -175,7 +175,7 @@ export function QuizContent() {
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground mb-4">
               {language === 'en' && `No quiz questions available for ${localizedClassName} yet.`}
-              {language === 'te' && `${localizedClassName} కోసం క్విజ్ ప్రశ్నలు ఇంకా అందుబాటులో లేవు.`}
+              {language === 'ta' && `${localizedClassName} க்கான வினாடி வினா கேள்விகள் இன்னும் கிடைக்கவில்லை.`}
               {language === 'ur' && `${localizedClassName} کے لیے ابھی کوئی کوئز سوالات دستیاب نہیں ہیں۔`}
             </p>
             <Button onClick={() => router.push('/test')} variant="outline">
@@ -208,7 +208,7 @@ export function QuizContent() {
               </div>
               <CardTitle className="text-3xl">
                 {language === 'en' && `Start ${localizedClassName} Quiz`}
-                {language === 'te' && `${localizedClassName} క్విజ్ ప్రారంభించండి`}
+                {language === 'ta' && `${localizedClassName} வினாடி வினா தொடங்கு`}
                 {language === 'ur' && `${localizedClassName} کوئز شروع کریں`}
               </CardTitle>
             </CardHeader>
@@ -216,14 +216,14 @@ export function QuizContent() {
               <div className="space-y-2">
                 <p className="text-muted-foreground">
                   {language === 'en' && `Welcome to the ${localizedClassName} Quiz! Test your knowledge across all subjects.`}
-                  {language === 'te' && `${localizedClassName} క్విజ్‌కు స్వాగతం! అన్ని విషయాలలో మీ జ్ఞానాన్ని పరీక్షించండి.`}
-                  {language === 'ur' && `${localizedClassName} کوئز میں خوش آمدید! تمام مضامین میں اپنے علم کی جانچ کریں۔`}
+                  {language === 'ta' && `${localizedClassName} வினாடி வினாவுக்கு வரவேற்கிறோம்! அனைத்து பாடங்களிலும் உங்கள் அறிவை சோதிக்கவும்.`}
+                  {language === 'ur' && `${localizedClassName} کوئز میں ��وش آمدید! تمام مضامین میں اپنے علم کی جانچ کریں۔`}
                 </p>
                 <div className="grid grid-cols-1 gap-4 mt-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm text-muted-foreground">
                       {language === 'en' && 'Total Questions'}
-                      {language === 'te' && 'మొత్తం ప్రశ్నలు'}
+                      {language === 'ta' && 'மொத்த கேள்விகள்'}
                       {language === 'ur' && 'کل سوالات'}
                     </p>
                     <p className="text-2xl font-bold text-foreground">{totalQuestions}</p>
@@ -282,7 +282,7 @@ export function QuizContent() {
               <div className="space-y-3">
                 <h3 className="font-semibold text-sm text-foreground">
                   {language === 'en' && 'Answer Review'}
-                  {language === 'te' && 'సమాధాన సమీక్ష'}
+                  {language === 'ta' && 'பதில் மதிப்பாய்வு'}
                   {language === 'ur' && 'جواب کا جائزہ'}
                 </h3>
                 <div className="max-h-64 overflow-y-auto space-y-2">
@@ -307,7 +307,7 @@ export function QuizContent() {
                         {userAnswer && selectedOption && (
                           <p className="text-xs text-muted-foreground ms-7">
                             {language === 'en' && `Your answer: ${getLocalizedText(selectedOption)}`}
-                            {language === 'te' && `మీ సమాధానం: ${getLocalizedText(selectedOption)}`}
+                            {language === 'ta' && `உங்கள் பதில்: ${getLocalizedText(selectedOption)}`}
                             {language === 'ur' && `آپ کا جواب: ${getLocalizedText(selectedOption)}`}
                           </p>
                         )}
@@ -427,7 +427,7 @@ export function QuizContent() {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   {language === 'en' && 'No options available for this question'}
-                  {language === 'te' && 'ఈ ప్రశ్నకు ఎంపికలు అందుబాటులో లేవు'}
+                  {language === 'ta' && 'இந்த கேள்விக்கு விருப்பங்கள் கிடைக்கவில்லை'}
                   {language === 'ur' && 'اس سوال کے لیے کوئی آپشن دستیاب نہیں ہیں'}
                 </div>
               )}
