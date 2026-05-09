@@ -463,10 +463,120 @@ export default function QuestionsPage() {
                                 {questionIndex + 1}.
                               </span>
                               <div className="flex-1">
-                                <p className="text-foreground text-sm sm:text-base group-hover:text-primary transition-colors">
+                                <p className="text-foreground text-sm sm:text-base group-hover:text-primary transition-colors font-medium">
                                   {question.text}
                                 </p>
-                                <p className="text-xs text-muted-foreground mt-1">
+                                
+                                {/* Question Preview */}
+                                <div className="mt-3 p-3 bg-muted/50 rounded-lg border border-border/50">
+                                  {/* Word Reading Preview */}
+                                  {question.type === "word_reading" && question.data?.words && (
+                                    <div className="space-y-2">
+                                      <p className="text-xs text-muted-foreground mb-2">{question.data.instructions}</p>
+                                      <div className="grid grid-cols-4 gap-2">
+                                        {question.data.words.flat().slice(0, 8).map((word: string, idx: number) => (
+                                          <span key={idx} className="text-sm bg-background px-2 py-1 rounded text-center border border-border">
+                                            {word}
+                                          </span>
+                                        ))}
+                                        {question.data.words.flat().length > 8 && (
+                                          <span className="text-xs text-muted-foreground col-span-4 text-center">
+                                            +{question.data.words.flat().length - 8} more words
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Paragraph Reading Preview */}
+                                  {question.type === "paragraph_reading" && question.data?.paragraph && (
+                                    <div className="space-y-2">
+                                      <p className="text-xs text-muted-foreground">{question.data.instructions}</p>
+                                      <p className="text-sm bg-background p-2 rounded border border-border leading-relaxed">
+                                        {question.data.paragraph.length > 150 
+                                          ? question.data.paragraph.slice(0, 150) + "..." 
+                                          : question.data.paragraph}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">Word count: {question.data.wordCount}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Picture Writing Preview */}
+                                  {question.type === "picture_writing" && (
+                                    <div className="flex gap-4 items-start">
+                                      <div className="w-24 h-24 sm:w-32 sm:h-32 bg-muted rounded-lg border border-border flex items-center justify-center overflow-hidden shrink-0">
+                                        {question.data?.imageUrl ? (
+                                          <Image
+                                            src={question.data.imageUrl}
+                                            alt="Question image"
+                                            width={128}
+                                            height={128}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1 space-y-2">
+                                        <p className="text-xs text-muted-foreground">{question.data?.instructions}</p>
+                                        <p className="text-sm text-foreground">
+                                          Write {question.data?.numberOfWords || 5} words
+                                        </p>
+                                        <div className="flex gap-2 flex-wrap">
+                                          {Array.from({ length: question.data?.numberOfWords || 5 }).map((_, idx) => (
+                                            <span key={idx} className="text-xs bg-background px-3 py-1 rounded border border-dashed border-border text-muted-foreground">
+                                              Word {idx + 1}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* MCQ Preview */}
+                                  {question.type === "mcq" && question.question_options && (
+                                    <div className="space-y-1">
+                                      {question.question_options.slice(0, 4).map((opt, idx) => (
+                                        <div key={opt.id} className={`text-sm px-2 py-1 rounded flex items-center gap-2 ${opt.is_correct ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-background'}`}>
+                                          <span className="text-xs text-muted-foreground">{String.fromCharCode(65 + idx)}.</span>
+                                          <span>{opt.text}</span>
+                                          {opt.is_correct && <Check className="w-3 h-3 ml-auto" />}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Image Question Preview */}
+                                  {question.type === "image" && question.data?.imageUrl && (
+                                    <div className="flex gap-4 items-center">
+                                      <div className="w-20 h-20 bg-muted rounded-lg border border-border flex items-center justify-center overflow-hidden">
+                                        <Image
+                                          src={question.data.imageUrl}
+                                          alt="Question image"
+                                          width={80}
+                                          height={80}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        {question.question_options && question.question_options.slice(0, 2).map((opt, idx) => (
+                                          <div key={opt.id} className="text-sm text-muted-foreground">
+                                            {String.fromCharCode(65 + idx)}. {opt.text}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Generic fallback for other types */}
+                                  {!["word_reading", "paragraph_reading", "picture_writing", "mcq", "image"].includes(question.type) && (
+                                    <p className="text-xs text-muted-foreground italic">
+                                      {getTypeLabel(question.type)} question - click to view details
+                                    </p>
+                                  )}
+                                </div>
+                                
+                                <p className="text-xs text-muted-foreground mt-2">
                                   Click to edit
                                 </p>
                               </div>
