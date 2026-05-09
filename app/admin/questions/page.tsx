@@ -540,7 +540,6 @@ export default function QuestionsPage() {
                 </div>
               ))
             )}
-          </div>
         </div>
       </main>
     </div>
