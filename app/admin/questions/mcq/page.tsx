@@ -19,6 +19,8 @@ interface Option {
 export default function MCQEditorPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [sectionId, setSectionId] = useState<string>("")
+  const [loading, setLoading] = useState(false)
   
   // Question settings
   const [questionText, setQuestionText] = useState("")
@@ -33,6 +35,13 @@ export default function MCQEditorPage() {
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 50)
     return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    // Get section ID from query params
+    const params = new URLSearchParams(window.location.search)
+    const sid = params.get("sectionId")
+    if (sid) setSectionId(sid)
   }, [])
 
   const handleOptionChange = (id: number, text: string) => {
@@ -63,9 +72,65 @@ export default function MCQEditorPage() {
     }
   }
 
-  const handleSave = () => {
-    // Save logic here
-    router.push("/admin/questions")
+  const handleSave = async () => {
+    if (!questionText.trim()) {
+      alert("Please enter a question")
+      return
+    }
+
+    const filledOpts = options.filter(opt => opt.text.trim())
+    if (filledOpts.length < 2) {
+      alert("Please provide at least 2 options")
+      return
+    }
+
+    if (!filledOpts.some(opt => opt.isCorrect)) {
+      alert("Please mark at least one option as correct")
+      return
+    }
+
+    if (!sectionId) {
+      alert("Please select a section")
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Create question
+      const questionRes = await fetch("/api/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: questionText,
+          type: "mcq",
+          sectionId,
+          data: { allowMultiple },
+        }),
+      })
+
+      if (!questionRes.ok) throw new Error("Failed to save question")
+      const question = await questionRes.json()
+
+      // Create options
+      for (const opt of filledOpts) {
+        await fetch("/api/question-options", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            questionId: question.id,
+            text: opt.text,
+            isCorrect: opt.isCorrect,
+          }),
+        })
+      }
+
+      router.push("/admin/questions")
+    } catch (error) {
+      console.error("Error saving question:", error)
+      alert("Failed to save question")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filledOptions = options.filter(opt => opt.text.trim())
@@ -101,9 +166,9 @@ export default function MCQEditorPage() {
                 </h1>
               </div>
             </div>
-            <Button onClick={handleSave} className="gap-2">
+            <Button onClick={handleSave} disabled={loading} className="gap-2">
               <Check className="w-4 h-4" />
-              Save Question
+              {loading ? "Saving..." : "Save Question"}
             </Button>
           </div>
         </div>
