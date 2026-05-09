@@ -27,8 +27,7 @@ import {
   Loader,
   Volume2,
   BookOpen,
-  ImagePlus,
-  Eye
+  ImagePlus
 } from "lucide-react"
 import { mockSections } from "@/lib/mock-data"
 
@@ -110,18 +109,10 @@ export default function QuestionsPage() {
   const [newSectionTitle, setNewSectionTitle] = useState("")
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editSectionTitle, setEditSectionTitle] = useState("")
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
-  const [selectedSectionTitle, setSelectedSectionTitle] = useState<string>("")
-
   // Load sections - using mock data for demo
   useEffect(() => {
     setSections(mockSections)
     setLoading(false)
-    // Select first question by default
-    if (mockSections.length > 0 && mockSections[0].questions && mockSections[0].questions.length > 0) {
-      setSelectedQuestion(mockSections[0].questions[0])
-      setSelectedSectionTitle(mockSections[0].title)
-    }
   }, [])
 
   useEffect(() => {
@@ -251,9 +242,7 @@ export default function QuestionsPage() {
               ? { ...s, questions: s.questions?.filter(q => q.id !== questionId) }
               : s
           ))
-          if (selectedQuestion?.id === questionId) {
-            setSelectedQuestion(null)
-          }
+
         }
       } catch (error) {
         console.error("Error deleting question:", error)
@@ -277,11 +266,6 @@ export default function QuestionsPage() {
         alert("Failed to delete section")
       }
     }
-  }
-
-  const handleSelectQuestion = (question: Question, sectionTitle: string) => {
-    setSelectedQuestion(question)
-    setSelectedSectionTitle(sectionTitle)
   }
 
   if (loading) {
@@ -323,13 +307,11 @@ export default function QuestionsPage() {
         </div>
       </header>
 
-      {/* Main Content - Split Layout */}
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Edit Section */}
-        <div className={`w-full lg:w-1/2 xl:w-2/5 border-r border-border overflow-y-auto transition-all duration-500 ease-out ${
-          mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className={`max-w-3xl mx-auto p-4 sm:p-6 space-y-4 transition-all duration-500 ease-out ${
+          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}>
-          <div className="p-4 sm:p-6 space-y-4">
             {/* Add Section at beginning */}
             <div>
               {addingSectionAt === 0 ? (
@@ -462,16 +444,11 @@ export default function QuestionsPage() {
                     {section.questions && section.questions.length > 0 ? (
                       section.questions.map((question, questionIndex) => {
                         const Icon = getTypeIcon(question.type)
-                        const isSelected = selectedQuestion?.id === question.id
                         return (
                           <Card 
                             key={question.id} 
-                            className={`border transition-all duration-200 cursor-pointer group ${
-                              isSelected 
-                                ? "border-primary bg-primary/5 shadow-md" 
-                                : "border-border hover:border-primary/50 hover:shadow-sm"
-                            }`}
-                            onClick={() => handleSelectQuestion(question, section.title)}
+                            className="border border-border hover:border-primary/50 hover:shadow-sm transition-all duration-200 cursor-pointer group"
+                            onClick={() => router.push(`${getEditorRoute(question.type)}?questionId=${question.id}&sectionId=${section.id}`)}
                           >
                             <CardContent className="p-3">
                               <div className="flex items-start justify-between gap-2">
@@ -480,7 +457,7 @@ export default function QuestionsPage() {
                                     {questionIndex + 1}.
                                   </span>
                                   <div className="flex-1 min-w-0">
-                                    <p className={`text-sm truncate ${isSelected ? "text-primary font-medium" : "text-foreground group-hover:text-primary"} transition-colors`}>
+                                    <p className="text-sm text-foreground group-hover:text-primary transition-colors">
                                       {question.text}
                                     </p>
                                     <div className="flex items-center gap-2 mt-1">
@@ -562,211 +539,6 @@ export default function QuestionsPage() {
                   </div>
                 </div>
               ))
-            )}
-          </div>
-        </div>
-
-        {/* Right Panel - Preview */}
-        <div className={`hidden lg:flex lg:w-1/2 xl:w-3/5 bg-muted/30 flex-col transition-all duration-500 ease-out ${
-          mounted ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
-        }`}>
-          {/* Preview Header */}
-          <div className="border-b border-border bg-background px-6 py-4 flex items-center gap-2">
-            <Eye className="w-5 h-5 text-muted-foreground" />
-            <h2 className="font-semibold text-foreground">Question Preview</h2>
-          </div>
-
-          {/* Preview Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {selectedQuestion ? (
-              <div className="max-w-2xl mx-auto">
-                {/* Section Title */}
-                <p className="text-sm text-muted-foreground mb-2">{selectedSectionTitle}</p>
-                
-                {/* Question Title */}
-                <h3 className="text-xl font-semibold text-foreground mb-6">{selectedQuestion.text}</h3>
-
-                {/* Preview based on question type */}
-                <Card className="bg-background">
-                  <CardContent className="p-6">
-                    {/* Word Reading Preview */}
-                    {selectedQuestion.type === "word_reading" && selectedQuestion.data?.words && (
-                      <div className="space-y-4">
-                        <p className="text-sm text-muted-foreground">{selectedQuestion.data.instructions}</p>
-                        <div className="border border-border rounded-lg p-4 bg-muted/30">
-                          <div className="grid grid-cols-5 gap-3">
-                            {selectedQuestion.data.words.flat().map((word: string, idx: number) => (
-                              <div 
-                                key={idx} 
-                                className="text-center p-3 bg-background rounded-lg border border-border hover:border-primary/50 transition-colors"
-                              >
-                                <span className="text-lg font-medium">{word}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex justify-between text-sm text-muted-foreground">
-                          <span>Total words: {selectedQuestion.data.words.flat().length}</span>
-                          <span>Grid: {selectedQuestion.data.words.length} rows x {selectedQuestion.data.words[0]?.length || 0} cols</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Paragraph Reading Preview */}
-                    {selectedQuestion.type === "paragraph_reading" && selectedQuestion.data?.paragraph && (
-                      <div className="space-y-4">
-                        <p className="text-sm text-muted-foreground">{selectedQuestion.data.instructions}</p>
-                        <div className="border border-border rounded-lg p-6 bg-muted/30">
-                          <p className="text-lg leading-relaxed whitespace-pre-wrap">
-                            {selectedQuestion.data.paragraph}
-                          </p>
-                        </div>
-                        <div className="flex gap-4 text-sm text-muted-foreground">
-                          <span>Word count: {selectedQuestion.data.wordCount}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Picture Writing Preview */}
-                    {selectedQuestion.type === "picture_writing" && (
-                      <div className="space-y-4">
-                        <p className="text-sm text-muted-foreground">{selectedQuestion.data?.instructions}</p>
-                        
-                        {/* Image Display */}
-                        <div className="flex justify-center">
-                          <div className="w-64 h-64 bg-muted rounded-xl border-2 border-border flex items-center justify-center overflow-hidden">
-                            {selectedQuestion.data?.imageUrl ? (
-                              <Image
-                                src={selectedQuestion.data.imageUrl}
-                                alt="Question image"
-                                width={256}
-                                height={256}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="text-center text-muted-foreground">
-                                <ImageIcon className="w-12 h-12 mx-auto mb-2" />
-                                <p className="text-sm">No image</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Word Input Fields */}
-                        <div className="mt-6">
-                          <p className="text-sm font-medium text-foreground mb-3">
-                            Write {selectedQuestion.data?.numberOfWords || 5} words based on the picture:
-                          </p>
-                          <div className="grid grid-cols-5 gap-3">
-                            {Array.from({ length: selectedQuestion.data?.numberOfWords || 5 }).map((_, idx) => (
-                              <div 
-                                key={idx} 
-                                className="h-12 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted/30"
-                              >
-                                <span className="text-sm text-muted-foreground">{idx + 1}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* MCQ Preview */}
-                    {selectedQuestion.type === "mcq" && selectedQuestion.question_options && (
-                      <div className="space-y-3">
-                        {selectedQuestion.question_options.map((opt, idx) => (
-                          <div 
-                            key={opt.id} 
-                            className={`p-4 rounded-lg border-2 flex items-center gap-3 transition-colors ${
-                              opt.is_correct 
-                                ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
-                                : "border-border hover:border-muted-foreground/50"
-                            }`}
-                          >
-                            <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                              opt.is_correct 
-                                ? "bg-green-500 text-white" 
-                                : "bg-muted text-muted-foreground"
-                            }`}>
-                              {String.fromCharCode(65 + idx)}
-                            </span>
-                            <span className={`flex-1 ${opt.is_correct ? "text-green-700 dark:text-green-300 font-medium" : "text-foreground"}`}>
-                              {opt.text}
-                            </span>
-                            {opt.is_correct && <Check className="w-5 h-5 text-green-500" />}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Image Question Preview */}
-                    {selectedQuestion.type === "image" && (
-                      <div className="space-y-4">
-                        {selectedQuestion.data?.imageUrl && (
-                          <div className="flex justify-center">
-                            <div className="w-48 h-48 bg-muted rounded-lg border border-border flex items-center justify-center overflow-hidden">
-                              <Image
-                                src={selectedQuestion.data.imageUrl}
-                                alt="Question image"
-                                width={192}
-                                height={192}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        )}
-                        {selectedQuestion.question_options && (
-                          <div className="space-y-2">
-                            {selectedQuestion.question_options.map((opt, idx) => (
-                              <div 
-                                key={opt.id} 
-                                className={`p-3 rounded-lg border flex items-center gap-2 ${
-                                  opt.is_correct 
-                                    ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
-                                    : "border-border"
-                                }`}
-                              >
-                                <span className="text-sm font-medium text-muted-foreground">
-                                  {String.fromCharCode(65 + idx)}.
-                                </span>
-                                <span>{opt.text}</span>
-                                {opt.is_correct && <Check className="w-4 h-4 text-green-500 ml-auto" />}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Generic fallback */}
-                    {!["word_reading", "paragraph_reading", "picture_writing", "mcq", "image"].includes(selectedQuestion.type) && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p className="text-lg mb-2">{getTypeLabel(selectedQuestion.type)}</p>
-                        <p className="text-sm">Preview not available for this question type</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Edit Button */}
-                <div className="mt-6 flex justify-center">
-                  <Button
-                    onClick={() => router.push(`${getEditorRoute(selectedQuestion.type)}?questionId=${selectedQuestion.id}`)}
-                    className="gap-2"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Edit Question
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center text-center">
-                <div className="text-muted-foreground">
-                  <Eye className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p className="text-lg font-medium">Select a question to preview</p>
-                  <p className="text-sm mt-1">Click on any question from the left panel</p>
-                </div>
-              </div>
             )}
           </div>
         </div>
