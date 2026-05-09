@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Save, BookOpen, Loader } from "lucide-react"
+import { ArrowLeft, Save, BookOpen, Loader, Eye, Clock, BarChart3 } from "lucide-react"
 
 function ParagraphReadingContent() {
   const router = useRouter()
@@ -114,14 +114,15 @@ function ParagraphReadingContent() {
   }
 
   const wordCount = paragraph.trim().split(/\s+/).filter(w => w).length
+  const estimatedTime = Math.ceil(wordCount / 100) // Assuming ~100 words per minute
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className={`border-b border-border transition-all duration-700 ease-out ${
+      <header className={`border-b border-border bg-background sticky top-0 z-10 transition-all duration-700 ease-out ${
         mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
       }`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/admin/questions" className="p-2 hover:bg-muted rounded-full transition-colors">
               <ArrowLeft className="w-5 h-5 text-muted-foreground" />
@@ -133,7 +134,7 @@ function ParagraphReadingContent() {
               height={40}
               className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
             />
-            <span className="text-muted-foreground text-sm tracking-[0.2em] uppercase font-semibold">
+            <span className="text-muted-foreground text-sm tracking-[0.2em] uppercase font-semibold hidden sm:inline">
               imli
             </span>
           </div>
@@ -143,106 +144,168 @@ function ParagraphReadingContent() {
               Paragraph Reading
             </h1>
           </div>
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span className="hidden sm:inline">{isEditMode ? "Update" : "Save"}</span>
+          </Button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <Card className={`transition-all duration-500 ease-out ${
-          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+      {/* Main Content - Split Layout */}
+      <main className="max-w-7xl mx-auto">
+        <div className={`flex flex-col lg:flex-row min-h-[calc(100vh-73px)] transition-all duration-500 ease-out ${
+          mounted ? "opacity-100" : "opacity-0"
         }`}>
-          <CardHeader>
-            <CardTitle>{isEditMode ? "Edit" : "Create"} Paragraph Reading Question</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader className="w-8 h-8 animate-spin text-primary" />
+          
+          {/* Left Panel - Edit */}
+          <div className="w-full lg:w-1/2 border-r border-border overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-6">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span className="text-sm font-medium uppercase tracking-wide">Edit</span>
               </div>
-            ) : (
-              <>
-            {/* Question Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title">Question Title</Label>
-              <Input
-                id="title"
-                value={questionTitle}
-                onChange={(e) => setQuestionTitle(e.target.value)}
-                placeholder="Enter question title"
-              />
-            </div>
 
-            {/* Subtitle */}
-            <div className="space-y-2">
-              <Label htmlFor="subtitle">Subtitle</Label>
-              <Input
-                id="subtitle"
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                placeholder="e.g., Oral Reading Fluency (ORF)"
-              />
-            </div>
-
-            {/* Instruction */}
-            <div className="space-y-2">
-              <Label htmlFor="instruction">Instruction for Students</Label>
-              <Input
-                id="instruction"
-                value={instruction}
-                onChange={(e) => setInstruction(e.target.value)}
-                placeholder="Enter instruction"
-              />
-            </div>
-
-            {/* Paragraph */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="paragraph">Paragraph</Label>
-                <span className="text-xs text-muted-foreground">{wordCount} words</span>
-              </div>
-              <Textarea
-                id="paragraph"
-                value={paragraph}
-                onChange={(e) => setParagraph(e.target.value)}
-                placeholder="Enter the paragraph for students to read..."
-                rows={6}
-                className="resize-none"
-              />
-            </div>
-
-            {/* Preview */}
-            <div className="space-y-2">
-              <Label>Preview</Label>
-              <div className="p-6 bg-muted/30 rounded-lg border">
-                <p className="text-sm text-primary font-medium mb-1">{subtitle}</p>
-                <h3 className="text-lg font-semibold mb-2">{questionTitle}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{instruction}</p>
-                <div className="p-4 bg-background rounded-lg border-2 border-dashed">
-                  <p className="text-lg leading-relaxed text-foreground text-center font-medium">
-                    {paragraph || "Your paragraph will appear here..."}
-                  </p>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="w-8 h-8 animate-spin text-primary" />
                 </div>
-              </div>
-            </div>
+              ) : (
+                <>
+                  {/* Question Title */}
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Question Title</Label>
+                    <Input
+                      id="title"
+                      value={questionTitle}
+                      onChange={(e) => setQuestionTitle(e.target.value)}
+                      placeholder="Enter question title"
+                    />
+                  </div>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-4 border-t">
-              <Button variant="outline" onClick={() => router.push("/admin/questions")} className="flex-1">
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={saving} className="flex-1 gap-2">
-                {saving ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                {isEditMode ? "Update" : "Save"} Question
-              </Button>
+                  {/* Subtitle */}
+                  <div className="space-y-2">
+                    <Label htmlFor="subtitle">Subtitle</Label>
+                    <Input
+                      id="subtitle"
+                      value={subtitle}
+                      onChange={(e) => setSubtitle(e.target.value)}
+                      placeholder="e.g., Oral Reading Fluency (ORF)"
+                    />
+                  </div>
+
+                  {/* Instruction */}
+                  <div className="space-y-2">
+                    <Label htmlFor="instruction">Instruction for Students</Label>
+                    <Input
+                      id="instruction"
+                      value={instruction}
+                      onChange={(e) => setInstruction(e.target.value)}
+                      placeholder="Enter instruction"
+                    />
+                  </div>
+
+                  {/* Paragraph */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="paragraph">Paragraph</Label>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <BarChart3 className="w-3 h-3" />
+                          {wordCount} words
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          ~{estimatedTime} min
+                        </span>
+                      </div>
+                    </div>
+                    <Textarea
+                      id="paragraph"
+                      value={paragraph}
+                      onChange={(e) => setParagraph(e.target.value)}
+                      placeholder="Enter the paragraph for students to read..."
+                      rows={10}
+                      className="resize-none"
+                    />
+                  </div>
+
+                  {/* Actions for mobile */}
+                  <div className="flex gap-3 pt-4 border-t lg:hidden">
+                    <Button variant="outline" onClick={() => router.push("/admin/questions")} className="flex-1">
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSave} disabled={saving} className="flex-1 gap-2">
+                      {saving ? (
+                        <Loader className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                      {isEditMode ? "Update" : "Save"}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Right Panel - Preview */}
+          <div className="w-full lg:w-1/2 bg-muted/30 overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center gap-2 text-muted-foreground mb-6">
+                <Eye className="w-4 h-4" />
+                <span className="text-sm font-medium uppercase tracking-wide">Live Preview</span>
+              </div>
+
+              {/* Preview Card - Simulates student view */}
+              <Card className="shadow-lg">
+                <CardHeader className="bg-primary/5 border-b">
+                  <div className="space-y-1">
+                    {subtitle && (
+                      <p className="text-xs text-primary font-medium uppercase tracking-wide">{subtitle}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-primary" />
+                      <CardTitle className="text-lg">{questionTitle || "Question Title"}</CardTitle>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <p className="text-sm text-muted-foreground mb-6">
+                    {instruction || "Instructions will appear here..."}
+                  </p>
+                  
+                  {/* Paragraph Preview */}
+                  <div className="p-6 bg-background rounded-xl border-2 border-dashed border-border">
+                    <p className="text-lg leading-loose text-foreground text-center font-medium">
+                      {paragraph || "Your paragraph will appear here. Start typing to see the preview..."}
+                    </p>
+                  </div>
+
+                  {/* Reading stats */}
+                  <div className="mt-6 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-primary">{wordCount}</p>
+                          <p className="text-xs text-muted-foreground">Words</p>
+                        </div>
+                        <div className="w-px h-8 bg-border" />
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-primary">~{estimatedTime}</p>
+                          <p className="text-xs text-muted-foreground">Minutes</p>
+                        </div>
+                      </div>
+                      <span className="text-xs bg-muted px-2 py-1 rounded">Student View</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   )

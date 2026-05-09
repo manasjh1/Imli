@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Save, ImagePlus, Loader, Upload, X } from "lucide-react"
+import { ArrowLeft, Save, ImagePlus, Loader, Upload, X, Eye, PenLine } from "lucide-react"
 
 function PictureWritingContent() {
   const router = useRouter()
@@ -67,16 +67,8 @@ function PictureWritingContent() {
 
     setUploading(true)
     try {
-      // For now, use a local URL - in production, you would upload to Vercel Blob
       const localUrl = URL.createObjectURL(file)
       setImageUrl(localUrl)
-      
-      // In a real app, upload to Vercel Blob:
-      // const formData = new FormData()
-      // formData.append("file", file)
-      // const res = await fetch("/api/upload", { method: "POST", body: formData })
-      // const { url } = await res.json()
-      // setImageUrl(url)
     } catch (error) {
       console.error("Error uploading image:", error)
       alert("Failed to upload image")
@@ -154,10 +146,10 @@ function PictureWritingContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className={`border-b border-border transition-all duration-700 ease-out ${
+      <header className={`border-b border-border bg-background sticky top-0 z-10 transition-all duration-700 ease-out ${
         mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
       }`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/admin/questions" className="p-2 hover:bg-muted rounded-full transition-colors">
               <ArrowLeft className="w-5 h-5 text-muted-foreground" />
@@ -169,7 +161,7 @@ function PictureWritingContent() {
               height={40}
               className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
             />
-            <span className="text-muted-foreground text-sm tracking-[0.2em] uppercase font-semibold">
+            <span className="text-muted-foreground text-sm tracking-[0.2em] uppercase font-semibold hidden sm:inline">
               imli
             </span>
           </div>
@@ -179,179 +171,231 @@ function PictureWritingContent() {
               Picture Writing
             </h1>
           </div>
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span className="hidden sm:inline">{isEditMode ? "Update" : "Save"}</span>
+          </Button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <Card className={`transition-all duration-500 ease-out ${
-          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+      {/* Main Content - Split Layout */}
+      <main className="max-w-7xl mx-auto">
+        <div className={`flex flex-col lg:flex-row min-h-[calc(100vh-73px)] transition-all duration-500 ease-out ${
+          mounted ? "opacity-100" : "opacity-0"
         }`}>
-          <CardHeader>
-            <CardTitle>{isEditMode ? "Edit" : "Create"} Picture Writing Question</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader className="w-8 h-8 animate-spin text-primary" />
+          
+          {/* Left Panel - Edit */}
+          <div className="w-full lg:w-1/2 border-r border-border overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-6">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span className="text-sm font-medium uppercase tracking-wide">Edit</span>
               </div>
-            ) : (
-              <>
-            {/* Question Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title">Question Title</Label>
-              <Input
-                id="title"
-                value={questionTitle}
-                onChange={(e) => setQuestionTitle(e.target.value)}
-                placeholder="e.g., Write Five Words"
-              />
-            </div>
 
-            {/* Subtitle */}
-            <div className="space-y-2">
-              <Label htmlFor="subtitle">Subtitle</Label>
-              <Input
-                id="subtitle"
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                placeholder="e.g., Writing Assessment"
-              />
-            </div>
-
-            {/* Instruction */}
-            <div className="space-y-2">
-              <Label htmlFor="instruction">Instruction for Students</Label>
-              <Input
-                id="instruction"
-                value={instruction}
-                onChange={(e) => setInstruction(e.target.value)}
-                placeholder="Enter instruction"
-              />
-            </div>
-
-            {/* Word Count */}
-            <div className="space-y-2">
-              <Label htmlFor="wordCount">Number of Words to Write</Label>
-              <Input
-                id="wordCount"
-                type="number"
-                min={1}
-                max={10}
-                value={wordCount}
-                onChange={(e) => setWordCount(parseInt(e.target.value) || 5)}
-                className="w-32"
-              />
-            </div>
-
-            {/* Image Upload */}
-            <div className="space-y-2">
-              <Label>Picture</Label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              
-              {imageUrl ? (
-                <div className="relative w-full aspect-video max-h-[300px] rounded-lg overflow-hidden border bg-muted">
-                  <Image
-                    src={imageUrl}
-                    alt="Uploaded picture"
-                    fill
-                    className="object-contain"
-                  />
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleRemoveImage}
-                    className="absolute top-2 right-2"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="w-8 h-8 animate-spin text-primary" />
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="w-full h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-                >
-                  {uploading ? (
-                    <Loader className="w-8 h-8 animate-spin" />
-                  ) : (
-                    <>
-                      <Upload className="w-8 h-8" />
-                      <span className="text-sm font-medium">Click to upload image</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-
-            {/* Image Description */}
-            <div className="space-y-2">
-              <Label htmlFor="imageDescription">Image Description (for accessibility)</Label>
-              <Input
-                id="imageDescription"
-                value={imageDescription}
-                onChange={(e) => setImageDescription(e.target.value)}
-                placeholder="e.g., A colorful zoo scene with animals"
-              />
-            </div>
-
-            {/* Preview */}
-            <div className="space-y-2">
-              <Label>Preview</Label>
-              <div className="p-6 bg-muted/30 rounded-lg border">
-                <p className="text-sm text-primary font-medium mb-1">{subtitle}</p>
-                <h3 className="text-lg font-semibold mb-2">{questionTitle}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{instruction}</p>
-                
-                {imageUrl && (
-                  <div className="relative w-full aspect-video max-h-[200px] rounded-lg overflow-hidden border mb-4 bg-muted">
-                    <Image
-                      src={imageUrl}
-                      alt={imageDescription || "Preview"}
-                      fill
-                      className="object-contain"
+                <>
+                  {/* Question Title */}
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Question Title</Label>
+                    <Input
+                      id="title"
+                      value={questionTitle}
+                      onChange={(e) => setQuestionTitle(e.target.value)}
+                      placeholder="e.g., Write Five Words"
                     />
                   </div>
-                )}
-                
-                <div className="space-y-2">
-                  {Array.from({ length: wordCount }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {i + 1}
-                      </span>
-                      <div className="flex-1 h-10 bg-background border rounded-lg" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-4 border-t">
-              <Button variant="outline" onClick={() => router.push("/admin/questions")} className="flex-1">
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={saving} className="flex-1 gap-2">
-                {saving ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                {isEditMode ? "Update" : "Save"} Question
-              </Button>
+                  {/* Subtitle */}
+                  <div className="space-y-2">
+                    <Label htmlFor="subtitle">Subtitle</Label>
+                    <Input
+                      id="subtitle"
+                      value={subtitle}
+                      onChange={(e) => setSubtitle(e.target.value)}
+                      placeholder="e.g., Writing Assessment"
+                    />
+                  </div>
+
+                  {/* Instruction */}
+                  <div className="space-y-2">
+                    <Label htmlFor="instruction">Instruction for Students</Label>
+                    <Input
+                      id="instruction"
+                      value={instruction}
+                      onChange={(e) => setInstruction(e.target.value)}
+                      placeholder="Enter instruction"
+                    />
+                  </div>
+
+                  {/* Word Count */}
+                  <div className="space-y-2">
+                    <Label htmlFor="wordCount">Number of Words to Write</Label>
+                    <Input
+                      id="wordCount"
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={wordCount}
+                      onChange={(e) => setWordCount(parseInt(e.target.value) || 5)}
+                      className="w-32"
+                    />
+                  </div>
+
+                  {/* Image Upload */}
+                  <div className="space-y-2">
+                    <Label>Picture</Label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    
+                    {imageUrl ? (
+                      <div className="relative w-full aspect-video max-h-[200px] rounded-lg overflow-hidden border bg-muted">
+                        <Image
+                          src={imageUrl}
+                          alt="Uploaded picture"
+                          fill
+                          className="object-contain"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleRemoveImage}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="w-full h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                      >
+                        {uploading ? (
+                          <Loader className="w-8 h-8 animate-spin" />
+                        ) : (
+                          <>
+                            <Upload className="w-6 h-6" />
+                            <span className="text-sm font-medium">Click to upload image</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Image Description */}
+                  <div className="space-y-2">
+                    <Label htmlFor="imageDescription">Image Description (for accessibility)</Label>
+                    <Input
+                      id="imageDescription"
+                      value={imageDescription}
+                      onChange={(e) => setImageDescription(e.target.value)}
+                      placeholder="e.g., A colorful zoo scene with animals"
+                    />
+                  </div>
+
+                  {/* Actions for mobile */}
+                  <div className="flex gap-3 pt-4 border-t lg:hidden">
+                    <Button variant="outline" onClick={() => router.push("/admin/questions")} className="flex-1">
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSave} disabled={saving} className="flex-1 gap-2">
+                      {saving ? (
+                        <Loader className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                      {isEditMode ? "Update" : "Save"}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Right Panel - Preview */}
+          <div className="w-full lg:w-1/2 bg-muted/30 overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center gap-2 text-muted-foreground mb-6">
+                <Eye className="w-4 h-4" />
+                <span className="text-sm font-medium uppercase tracking-wide">Live Preview</span>
+              </div>
+
+              {/* Preview Card - Simulates student view */}
+              <Card className="shadow-lg">
+                <CardHeader className="bg-primary/5 border-b">
+                  <div className="space-y-1">
+                    {subtitle && (
+                      <p className="text-xs text-primary font-medium uppercase tracking-wide">{subtitle}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <PenLine className="w-5 h-5 text-primary" />
+                      <CardTitle className="text-lg">{questionTitle || "Question Title"}</CardTitle>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <p className="text-sm text-muted-foreground mb-6">
+                    {instruction || "Instructions will appear here..."}
+                  </p>
+                  
+                  {/* Image Preview */}
+                  <div className="mb-6">
+                    {imageUrl ? (
+                      <div className="relative w-full aspect-video max-h-[250px] rounded-xl overflow-hidden border-2 border-border bg-muted">
+                        <Image
+                          src={imageUrl}
+                          alt={imageDescription || "Preview"}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-video max-h-[250px] rounded-xl border-2 border-dashed border-border bg-muted/50 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                        <ImagePlus className="w-12 h-12" />
+                        <span className="text-sm">Upload an image to see preview</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Word Input Fields */}
+                  <div className="space-y-3">
+                    {Array.from({ length: wordCount }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 h-12 bg-background border-2 border-border rounded-lg flex items-center px-4 text-muted-foreground">
+                          Type word here...
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="mt-6 pt-4 border-t">
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>Write {wordCount} word{wordCount !== 1 ? "s" : ""}</span>
+                      <span className="text-xs bg-muted px-2 py-1 rounded">Student View</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   )
