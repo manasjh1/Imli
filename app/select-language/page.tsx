@@ -34,8 +34,11 @@ export default function SelectLanguagePage() {
   }, [language])
 
   const handleLanguageSelect = (lang: Language) => {
-    setSelectedLanguage(lang)
-    setLanguage(lang)
+    // Only allow English selection
+    if (lang === "en") {
+      setSelectedLanguage(lang)
+      setLanguage(lang)
+    }
   }
 
   const handleContinue = () => {
@@ -96,17 +99,21 @@ export default function SelectLanguagePage() {
               {LANGUAGE_ORDER.map((langCode, index) => {
                 const langConfig = LANGUAGES[langCode]
                 const isSelected = selectedLanguage === langCode
+                const isDisabled = langCode !== "en"
                 
                 return (
                   <button
                     key={langCode}
                     onClick={() => handleLanguageSelect(langCode)}
+                    disabled={isDisabled}
                     className={`
                       relative w-full px-5 py-4 rounded-xl border-2 transition-all duration-200
                       flex items-center justify-between
-                      ${isSelected 
-                        ? "border-primary bg-primary/5" 
-                        : "border-border bg-card hover:border-primary/50 hover:bg-accent/50"
+                      ${isDisabled 
+                        ? "border-border bg-muted/50 cursor-not-allowed opacity-60" 
+                        : isSelected 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border bg-card hover:border-primary/50 hover:bg-accent/50"
                       }
                     `}
                     style={{ 
@@ -115,7 +122,7 @@ export default function SelectLanguagePage() {
                     }}
                   >
                     <div className="flex flex-col items-start gap-0.5">
-                      <span className="text-base sm:text-lg font-semibold text-foreground">
+                      <span className={`text-base sm:text-lg font-semibold ${isDisabled ? "text-muted-foreground" : "text-foreground"}`}>
                         {langConfig.nativeName}
                       </span>
                       <span className="text-sm text-muted-foreground">
@@ -123,10 +130,16 @@ export default function SelectLanguagePage() {
                       </span>
                     </div>
                     
-                    {isSelected && (
+                    {isSelected && !isDisabled && (
                       <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                         <Check className="w-4 h-4 text-primary-foreground" />
                       </div>
+                    )}
+                    
+                    {isDisabled && (
+                      <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-full">
+                        Coming Soon
+                      </span>
                     )}
                   </button>
                 )
