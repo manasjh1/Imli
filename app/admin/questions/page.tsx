@@ -29,6 +29,7 @@ import {
   BookOpen,
   ImagePlus
 } from "lucide-react"
+import { mockSections } from "@/lib/mock-data"
 
 type QuestionType = "mcq" | "audio" | "image" | "true_false" | "fill_blanks" | "match_columns" | "written" | "sequence" | "custom" | "word_reading" | "paragraph_reading" | "picture_writing"
 
@@ -109,23 +110,11 @@ export default function QuestionsPage() {
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editSectionTitle, setEditSectionTitle] = useState("")
 
-  // Load sections from Supabase
+  // Load sections - using mock data for demo
   useEffect(() => {
-    const loadSections = async () => {
-      try {
-        const res = await fetch("/api/sections")
-        if (res.ok) {
-          const data = await res.json()
-          setSections(data)
-        }
-      } catch (error) {
-        console.error("Error loading sections:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadSections()
+    // Use mock data instead of fetching from API
+    setSections(mockSections)
+    setLoading(false)
   }, [])
 
   useEffect(() => {
