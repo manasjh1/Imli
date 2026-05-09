@@ -23,7 +23,8 @@ export default function VerifyPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    router.push("/dashboard")
+    // CHANGE: Redirect to language selection instead of dashboard after successful OTP
+    router.push("/select-language")
   }
 
   const handleChange = (index: number, value: string) => {
