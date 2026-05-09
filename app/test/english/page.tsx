@@ -375,13 +375,15 @@ function EnglishTestContent() {
               {/* Question 3: Picture Writing */}
               {question.type === 'picture-writing' && (
                 <div className="space-y-6">
-                  {/* Zoo Image */}
-                  <div className="relative w-full h-48 sm:h-64 rounded-xl overflow-hidden border">
+                  {/* Zoo Image - Responsive container */}
+                  <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] max-h-[300px] sm:max-h-[350px] md:max-h-[400px] mx-auto rounded-xl overflow-hidden border bg-muted">
                     <Image
                       src="/images/zoo-scene.jpg"
                       alt="A colorful zoo scene with animals - giraffe, elephant, lion, monkeys and parrot"
                       fill
-                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 700px"
+                      className="object-contain"
+                      priority
                     />
                   </div>
                   

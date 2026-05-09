@@ -24,10 +24,13 @@ import {
   ArrowDownUp,
   Settings,
   Trash2,
-  Loader
+  Loader,
+  Volume2,
+  BookOpen,
+  ImagePlus
 } from "lucide-react"
 
-type QuestionType = "mcq" | "audio" | "image" | "true_false" | "fill_blanks" | "match_columns" | "written" | "sequence" | "custom"
+type QuestionType = "mcq" | "audio" | "image" | "true_false" | "fill_blanks" | "match_columns" | "written" | "sequence" | "custom" | "word_reading" | "paragraph_reading" | "picture_writing"
 
 interface QuestionOption {
   id: string
@@ -59,6 +62,9 @@ const questionTypes = [
   { id: "match_columns", label: "Match These Columns", icon: Columns },
   { id: "written", label: "Written Answer", icon: PenLine },
   { id: "sequence", label: "Arrange in Sequence", icon: ArrowDownUp },
+  { id: "word_reading", label: "Word Reading", icon: Volume2 },
+  { id: "paragraph_reading", label: "Paragraph Reading", icon: BookOpen },
+  { id: "picture_writing", label: "Picture Writing", icon: ImagePlus },
   { id: "custom", label: "Custom Type", icon: Settings },
 ]
 
@@ -128,6 +134,9 @@ export default function QuestionsPage() {
         match_columns: "/admin/questions/match-columns",
         written: "/admin/questions/written-answer",
         sequence: "/admin/questions/arrange-sequence",
+        word_reading: "/admin/questions/word-reading",
+        paragraph_reading: "/admin/questions/paragraph-reading",
+        picture_writing: "/admin/questions/picture-writing",
         custom: "/admin/questions/custom-type",
       }
       
