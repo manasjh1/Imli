@@ -1,4 +1,4 @@
-export type Language = "en" | "te" | "ur"
+export type Language = "en" | "ta" | "ur"
 
 export interface LanguageConfig {
   code: Language
@@ -14,10 +14,10 @@ export const LANGUAGES: Record<Language, LanguageConfig> = {
     nativeName: "English",
     dir: "ltr",
   },
-  te: {
-    code: "te",
-    name: "Telugu",
-    nativeName: "తెలుగు",
+  ta: {
+    code: "ta",
+    name: "Tamil",
+    nativeName: "தமிழ்",
     dir: "ltr",
   },
   ur: {
@@ -141,7 +141,9 @@ export interface Translations {
   language: {
     select: string
     english: string
-    telugu: string
+    tamil: string
     urdu: string
+    continue: string
+    welcomeBack: string
   }
 }
