@@ -16,10 +16,24 @@ interface Option {
   isCorrect: boolean
 }
 
+interface Class {
+  id: string
+  name: string
+}
+
+interface Subject {
+  id: string
+  name: string
+}
+
 export default function MCQEditorPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
   const [sectionId, setSectionId] = useState<string>("")
+  const [classId, setClassId] = useState<string>("")
+  const [subjectId, setSubjectId] = useState<string>("")
+  const [classes, setClasses] = useState<Class[]>([])
+  const [subjects, setSubjects] = useState<Subject[]>([])
   const [loading, setLoading] = useState(false)
   
   // Question settings
@@ -38,10 +52,32 @@ export default function MCQEditorPage() {
   }, [])
 
   useEffect(() => {
-    // Get section ID from query params
+    // Fetch classes and subjects
+    const fetchData = async () => {
+      try {
+        const [classRes, subjectRes] = await Promise.all([
+          fetch("/api/classes"),
+          fetch("/api/subjects"),
+        ])
+        const classData = await classRes.json()
+        const subjectData = await subjectRes.json()
+        setClasses(classData)
+        setSubjects(subjectData)
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      }
+    }
+
+    fetchData()
+
+    // Get params from URL
     const params = new URLSearchParams(window.location.search)
     const sid = params.get("sectionId")
+    const cid = params.get("classId")
+    const subid = params.get("subjectId")
     if (sid) setSectionId(sid)
+    if (cid) setClassId(cid)
+    if (subid) setSubjectId(subid)
   }, [])
 
   const handleOptionChange = (id: number, text: string) => {
@@ -89,8 +125,13 @@ export default function MCQEditorPage() {
       return
     }
 
-    if (!sectionId) {
-      alert("Please select a section")
+    if (!classId) {
+      alert("Please select a class")
+      return
+    }
+
+    if (!subjectId) {
+      alert("Please select a subject")
       return
     }
 
@@ -104,6 +145,8 @@ export default function MCQEditorPage() {
           text: questionText,
           type: "mcq",
           sectionId,
+          classId,
+          subjectId,
           data: { allowMultiple },
         }),
       })
@@ -187,6 +230,42 @@ export default function MCQEditorPage() {
                 <CardTitle className="text-lg">Question Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Class Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="class">Class</Label>
+                  <select
+                    id="class"
+                    value={classId}
+                    onChange={(e) => setClassId(e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                  >
+                    <option value="">Select a class</option>
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Subject Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Subject</Label>
+                  <select
+                    id="subject"
+                    value={subjectId}
+                    onChange={(e) => setSubjectId(e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                  >
+                    <option value="">Select a subject</option>
+                    {subjects.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Question Text */}
                 <div className="space-y-2">
                   <Label htmlFor="question">Question Text</Label>

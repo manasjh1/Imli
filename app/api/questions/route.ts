@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const sectionId = searchParams.get("sectionId")
+    const classId = searchParams.get("classId")
 
     let query = supabase
       .from("questions")
@@ -14,6 +15,10 @@ export async function GET(request: NextRequest) {
 
     if (sectionId) {
       query = query.eq("section_id", sectionId)
+    }
+
+    if (classId) {
+      query = query.eq("class_id", classId)
     }
 
     const { data, error } = await query
@@ -36,7 +41,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const body = await request.json()
 
-    const { text, type, sectionId, data, order } = body
+    const { text, type, sectionId, classId, subjectId, data, order } = body
 
     const { data: question, error } = await supabase
       .from("questions")
@@ -44,6 +49,8 @@ export async function POST(request: NextRequest) {
         text,
         type,
         section_id: sectionId,
+        class_id: classId,
+        subject_id: subjectId,
         data: data || {},
         order: order || 0,
       })

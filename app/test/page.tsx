@@ -1,433 +1,115 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Check, RotateCcw, Loader } from "lucide-react"
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ArrowRight, BookOpen, Loader } from 'lucide-react'
+import Image from 'next/image'
 
-interface QuestionOption {
+interface Class {
   id: string
-  text: string
-  is_correct: boolean
+  name: string
+  order: number
 }
 
-interface Question {
-  id: string
-  text: string
-  type: string
-  data: any
-  question_options?: QuestionOption[]
-}
-
-interface Section {
-  id: string
-  title: string
-  questions?: Question[]
-}
-
-interface Answer {
-  questionId: string
-  selectedOptionId: string
-}
-
-export default function QuizPage() {
+export default function TestPage() {
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
-  const [sections, setSections] = useState<Section[]>([])
+  const [classes, setClasses] = useState<Class[]>([])
   const [loading, setLoading] = useState(true)
-  const [started, setStarted] = useState(false)
-  const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [answers, setAnswers] = useState<Answer[]>([])
-  const [showResults, setShowResults] = useState(false)
-  const [score, setScore] = useState(0)
+  const [mounted, setMounted] = useState(false)
 
-  // Load sections from Supabase
   useEffect(() => {
-    const loadSections = async () => {
+    const fetchClasses = async () => {
       try {
-        const res = await fetch("/api/sections")
-        if (res.ok) {
-          const data = await res.json()
-          setSections(data)
-        }
+        const res = await fetch('/api/classes')
+        const data = await res.json()
+        setClasses(data)
       } catch (error) {
-        console.error("Error loading sections:", error)
+        console.error('Error fetching classes:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    loadSections()
+    fetchClasses()
   }, [])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true)
-    }, 50)
+    const timer = setTimeout(() => setMounted(true), 50)
     return () => clearTimeout(timer)
   }, [])
 
-  const allQuestions = sections.reduce((acc, section) => {
-    return acc.concat(section.questions || [])
-  }, [] as Question[])
-
-  const currentQuestion = allQuestions[currentQuestionIndex]
-  const currentSection = sections[currentSectionIndex]
-  const totalQuestions = allQuestions.length
-  const isLastQuestion = currentQuestionIndex === totalQuestions - 1
-
-  const handleSelectOption = (optionId: string) => {
-    // Remove previous answer for this question if exists
-    const newAnswers = answers.filter(a => a.questionId !== currentQuestion.id)
-    newAnswers.push({
-      questionId: currentQuestion.id,
-      selectedOptionId: optionId,
-    })
-    setAnswers(newAnswers)
+  const handleSelectClass = (classId: string) => {
+    router.push(`/test/quiz?classId=${classId}`)
   }
-
-  const handleNext = () => {
-    if (isLastQuestion) {
-      // Calculate score
-      let correctCount = 0
-      answers.forEach(answer => {
-        const question = allQuestions.find(q => q.id === answer.questionId)
-        const selectedOption = question?.question_options?.find(o => o.id === answer.selectedOptionId)
-        if (selectedOption?.is_correct) {
-          correctCount++
-        }
-      })
-      setScore(correctCount)
-      setShowResults(true)
-    } else {
-      setCurrentQuestionIndex(prev => prev + 1)
-    }
-  }
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1)
-    }
-  }
-
-  const handleStartQuiz = () => {
-    setStarted(true)
-  }
-
-  const handleRetake = () => {
-    setStarted(false)
-    setCurrentQuestionIndex(0)
-    setCurrentSectionIndex(0)
-    setAnswers([])
-    setShowResults(false)
-    setScore(0)
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin mx-auto text-primary" />
-          <p className="mt-2 text-muted-foreground">Loading quiz...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (allQuestions.length === 0) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md w-full mx-4">
-          <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground mb-4">No quiz questions available yet.</p>
-            <p className="text-sm text-muted-foreground mb-6">Please ask the administrator to add questions.</p>
-            <Button onClick={() => router.push("/")} variant="outline">
-              Go Back
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Quiz Start Screen
-  if (!started) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className={`max-w-2xl w-full transition-all duration-700 ${
-          mounted ? "opacity-100 scale-100" : "opacity-0 scale-95"
-        }`}>
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Image
-                src="/images/imili-logo.avif"
-                alt="Imli Logo"
-                width={64}
-                height={64}
-                className="w-16 h-16 object-contain"
-              />
-            </div>
-            <CardTitle className="text-3xl">Start Quiz</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <p className="text-muted-foreground">
-                Welcome to the Imli Quiz! Test your knowledge with questions across multiple sections.
-              </p>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Total Questions</p>
-                  <p className="text-2xl font-bold text-foreground">{totalQuestions}</p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Sections</p>
-                  <p className="text-2xl font-bold text-foreground">{sections.length}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Section List */}
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm text-foreground">Sections included:</h3>
-              <div className="space-y-2">
-                {sections.map((section) => (
-                  <div key={section.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <span className="text-sm font-medium text-foreground">{section.title}</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                      {section.questions?.length || 0} questions
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3 pt-4">
-              <p className="text-xs text-muted-foreground text-center">
-                You will need to answer all questions. Your score will be calculated at the end.
-              </p>
-              <Button onClick={handleStartQuiz} size="lg" className="w-full">
-                <Check className="w-4 h-4 mr-2" />
-                Start Quiz
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Results Screen
-  if (showResults) {
-    const percentage = Math.round((score / totalQuestions) * 100)
-    const isPassed = percentage >= 50
-
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className={`max-w-2xl w-full transition-all duration-700 ${
-          mounted ? "opacity-100 scale-100" : "opacity-0 scale-95"
-        }`}>
-          <CardHeader className="text-center">
-            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-4 ${
-              isPassed ? "bg-green-100" : "bg-orange-100"
-            }`}>
-              <span className={`text-4xl font-bold ${isPassed ? "text-green-600" : "text-orange-600"}`}>
-                {percentage}%
-              </span>
-            </div>
-            <CardTitle className="text-3xl">
-              {isPassed ? "Great Job!" : "Good Effort!"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center space-y-2">
-              <p className="text-lg font-semibold text-foreground">
-                You scored {score} out of {totalQuestions} questions correctly.
-              </p>
-              <p className="text-muted-foreground">
-                {isPassed 
-                  ? "You passed the quiz! " 
-                  : "Keep practicing to improve your score. "}
-                Try again to see if you can do better!
-              </p>
-            </div>
-
-            {/* Question Review */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-foreground">Answer Review</h3>
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {allQuestions.map((question, idx) => {
-                  const userAnswer = answers.find(a => a.questionId === question.id)
-                  const selectedOption = question.question_options?.find(o => o.id === userAnswer?.selectedOptionId)
-                  const isCorrect = selectedOption?.is_correct
-
-                  return (
-                    <div key={question.id} className="p-3 bg-muted/30 rounded-lg text-sm">
-                      <div className="flex gap-2 items-start mb-1">
-                        <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                          isCorrect ? "bg-green-500" : "bg-red-500"
-                        }`}>
-                          {isCorrect ? "✓" : "✗"}
-                        </span>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">Q{idx + 1}</p>
-                          <p className="text-xs text-muted-foreground">{question.text}</p>
-                        </div>
-                      </div>
-                      {userAnswer && (
-                        <p className="text-xs text-muted-foreground ml-7">
-                          Your answer: {selectedOption?.text || "Not answered"}
-                        </p>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            <Button onClick={handleRetake} size="lg" className="w-full">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Retake Quiz
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Quiz Question Screen
-  if (!currentQuestion) {
-    return null
-  }
-
-  const userAnswer = answers.find(a => a.questionId === currentQuestion.id)
-  const progressPercentage = ((currentQuestionIndex + 1) / totalQuestions) * 100
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Header */}
-      <header className={`sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b transition-all duration-500 ${
-        mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
-      }`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStarted(false)}
-                className="gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Back</span>
-              </Button>
-              <Image
-                src="/images/imili-logo.avif"
-                alt="Imili Logo"
-                width={32}
-                height={32}
-                className="w-8 h-8 object-contain"
-              />
-              <h1 className="text-lg sm:text-xl font-semibold text-foreground">
-                Quiz
-              </h1>
-            </div>
-            <div className="text-sm font-medium text-muted-foreground">
-              Question {currentQuestionIndex + 1} of {totalQuestions}
-            </div>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="w-full bg-muted rounded-full h-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all duration-500"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
+      <header className="border-b border-gray-200 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-3">
+          <Image
+            src="/images/imili-logo.avif"
+            alt="Imili Logo"
+            width={32}
+            height={32}
+            className="w-8 h-8 object-contain"
+          />
+          <h1 className="text-2xl font-bold text-gray-900">Quiz Portal</h1>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className={`transition-all duration-500 ${
-          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-        }`}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">{currentQuestion.text}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-2">
-                {currentSection?.title || "General"}
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Options */}
-              {currentQuestion.question_options && currentQuestion.question_options.length > 0 ? (
-                <div className="space-y-3">
-                  {currentQuestion.question_options.map((option, idx) => (
-                    <button
-                      key={option.id}
-                      onClick={() => handleSelectOption(option.id)}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                        userAnswer?.selectedOptionId === option.id
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          userAnswer?.selectedOptionId === option.id
-                            ? "bg-primary text-white"
-                            : "bg-muted text-muted-foreground"
-                        }`}>
-                          {String.fromCharCode(65 + idx)}
-                        </div>
-                        <span className="font-medium text-foreground">
-                          {option.text}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No options available for this question
-                </div>
-              )}
-
-              {/* Navigation Buttons */}
-              <div className="flex gap-3 pt-6 border-t">
-                <Button
-                  variant="outline"
-                  onClick={handlePrevious}
-                  disabled={currentQuestionIndex === 0}
-                  className="flex-1"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Previous
-                </Button>
-                <Button
-                  onClick={handleNext}
-                  disabled={!userAnswer}
-                  className="flex-1"
-                >
-                  {isLastQuestion ? (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Finish
-                    </>
-                  ) : (
-                    <>
-                      Next
-                      <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">Select Your Class</h2>
+          <p className="text-xl text-gray-600">
+            Choose your class to begin the quiz and test your knowledge
+          </p>
         </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <Loader className="w-8 h-8 animate-spin mx-auto text-blue-600" />
+              <p className="mt-2 text-gray-500">Loading classes...</p>
+            </div>
+          </div>
+        ) : (
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-700 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          }`}>
+            {classes.map((cls) => (
+              <Card
+                key={cls.id}
+                className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-blue-400"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <BookOpen className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-xl text-gray-900">
+                        {cls.name}
+                      </CardTitle>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
+                    onClick={() => handleSelectClass(cls.id)}
+                  >
+                    Start Quiz
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )
