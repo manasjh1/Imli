@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { 
   Plus, 
   Pencil, 
@@ -23,21 +22,32 @@ import {
   Columns,
   PenLine,
   ArrowDownUp,
-  Settings
+  Settings,
+  Trash2,
+  Loader
 } from "lucide-react"
 
 type QuestionType = "mcq" | "audio" | "image" | "true_false" | "fill_blanks" | "match_columns" | "written" | "sequence" | "custom"
 
+interface QuestionOption {
+  id: string
+  text: string
+  is_correct: boolean
+}
+
 interface Question {
-  id: number
+  id: string
   text: string
   type: QuestionType
+  data: any
+  question_options?: QuestionOption[]
 }
 
 interface Section {
-  id: number
+  id: string
   title: string
-  questions: Question[]
+  order: number
+  questions?: Question[]
 }
 
 const questionTypes = [
@@ -65,30 +75,34 @@ const getTypeLabel = (type: QuestionType) => {
 export default function QuestionsPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
-  const [sections, setSections] = useState<Section[]>([
-    {
-      id: 1,
-      title: "Section 1: General Knowledge",
-      questions: [
-        { id: 1, text: "What is the capital of France?", type: "mcq" },
-        { id: 2, text: "Explain the concept of photosynthesis.", type: "written" },
-      ]
-    },
-    {
-      id: 2,
-      title: "Section 2: Mathematics",
-      questions: [
-        { id: 3, text: "What is 25 x 4?", type: "fill_blanks" },
-      ]
-    }
-  ])
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [sections, setSections] = useState<Section[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
-  const [showTypeSelector, setShowTypeSelector] = useState<{ sectionId: number; questionIndex: number } | null>(null)
+  const [showTypeSelector, setShowTypeSelector] = useState<{ sectionId: string; questionIndex: number } | null>(null)
   const [addingSectionAt, setAddingSectionAt] = useState<number | null>(null)
   const [newSectionTitle, setNewSectionTitle] = useState("")
-  const [editingSectionId, setEditingSectionId] = useState<number | null>(null)
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editSectionTitle, setEditSectionTitle] = useState("")
+
+  // Load sections from Supabase
+  useEffect(() => {
+    const loadSections = async () => {
+      try {
+        const res = await fetch("/api/sections")
+        if (res.ok) {
+          const data = await res.json()
+          setSections(data)
+        }
+      } catch (error) {
+        console.error("Error loading sections:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSections()
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -97,44 +111,14 @@ export default function QuestionsPage() {
     return () => clearTimeout(timer)
   }, [])
 
-  const handleEdit = (question: Question) => {
-    setEditingId(question.id)
-    setEditText(question.text)
-    setShowTypeSelector(null)
-    setAddingSectionAt(null)
-  }
-
-  const handleSaveEdit = (sectionId: number, questionId: number) => {
-    if (editText.trim()) {
-      setSections(sections.map(section => 
-        section.id === sectionId 
-          ? {
-              ...section,
-              questions: section.questions.map(q => 
-                q.id === questionId ? { ...q, text: editText.trim() } : q
-              )
-            }
-          : section
-      ))
-    }
-    setEditingId(null)
-    setEditText("")
-  }
-
-  const handleCancelEdit = () => {
-    setEditingId(null)
-    setEditText("")
-  }
-
-  const handleShowTypeSelector = (sectionId: number, questionIndex: number) => {
-    setShowTypeSelector({ sectionId, questionIndex })
+  const handleShowTypeSelector = (sectionId: string) => {
+    setShowTypeSelector({ sectionId, questionIndex: 0 })
     setEditingId(null)
     setAddingSectionAt(null)
   }
 
   const handleSelectType = (type: QuestionType) => {
     if (showTypeSelector) {
-      // Navigate to dedicated editor pages
       const editorRoutes: Record<QuestionType, string> = {
         mcq: "/admin/questions/mcq",
         audio: "/admin/questions/audio-question",
@@ -147,7 +131,8 @@ export default function QuestionsPage() {
         custom: "/admin/questions/custom-type",
       }
       
-      router.push(editorRoutes[type])
+      const route = editorRoutes[type]
+      router.push(`${route}?sectionId=${showTypeSelector.sectionId}`)
     }
   }
 
@@ -162,16 +147,28 @@ export default function QuestionsPage() {
     setEditingId(null)
   }
 
-  const handleSaveSection = (index: number) => {
+  const handleSaveSection = async (index: number) => {
     if (newSectionTitle.trim()) {
-      const newSection: Section = {
-        id: Date.now(),
-        title: newSectionTitle.trim(),
-        questions: []
+      try {
+        const res = await fetch("/api/sections", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: newSectionTitle.trim(),
+            order: index,
+          }),
+        })
+
+        if (res.ok) {
+          const newSection = await res.json()
+          const newSections = [...sections]
+          newSections.splice(index, 0, newSection)
+          setSections(newSections)
+        }
+      } catch (error) {
+        console.error("Error saving section:", error)
+        alert("Failed to save section")
       }
-      const newSections = [...sections]
-      newSections.splice(index, 0, newSection)
-      setSections(newSections)
     }
     setAddingSectionAt(null)
     setNewSectionTitle("")
@@ -187,11 +184,27 @@ export default function QuestionsPage() {
     setEditSectionTitle(section.title)
   }
 
-  const handleSaveSectionEdit = (sectionId: number) => {
+  const handleSaveSectionEdit = async (sectionId: string) => {
     if (editSectionTitle.trim()) {
-      setSections(sections.map(s => 
-        s.id === sectionId ? { ...s, title: editSectionTitle.trim() } : s
-      ))
+      try {
+        const res = await fetch("/api/sections", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: sectionId,
+            title: editSectionTitle.trim(),
+          }),
+        })
+
+        if (res.ok) {
+          setSections(sections.map(s => 
+            s.id === sectionId ? { ...s, title: editSectionTitle.trim() } : s
+          ))
+        }
+      } catch (error) {
+        console.error("Error updating section:", error)
+        alert("Failed to update section")
+      }
     }
     setEditingSectionId(null)
     setEditSectionTitle("")
@@ -200,6 +213,55 @@ export default function QuestionsPage() {
   const handleCancelSectionEdit = () => {
     setEditingSectionId(null)
     setEditSectionTitle("")
+  }
+
+  const handleDeleteQuestion = async (questionId: string, sectionId: string) => {
+    if (confirm("Are you sure you want to delete this question?")) {
+      try {
+        const res = await fetch(`/api/questions?id=${questionId}`, {
+          method: "DELETE",
+        })
+
+        if (res.ok) {
+          setSections(sections.map(s =>
+            s.id === sectionId
+              ? { ...s, questions: s.questions?.filter(q => q.id !== questionId) }
+              : s
+          ))
+        }
+      } catch (error) {
+        console.error("Error deleting question:", error)
+        alert("Failed to delete question")
+      }
+    }
+  }
+
+  const handleDeleteSection = async (sectionId: string) => {
+    if (confirm("Are you sure you want to delete this section and all its questions?")) {
+      try {
+        const res = await fetch(`/api/sections?id=${sectionId}`, {
+          method: "DELETE",
+        })
+
+        if (res.ok) {
+          setSections(sections.filter(s => s.id !== sectionId))
+        }
+      } catch (error) {
+        console.error("Error deleting section:", error)
+        alert("Failed to delete section")
+      }
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin mx-auto text-primary" />
+          <p className="mt-2 text-muted-foreground">Loading sections...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -271,114 +333,110 @@ export default function QuestionsPage() {
           </div>
 
           {/* Sections */}
-          {sections.map((section, sectionIndex) => (
-            <div key={section.id} className={`transition-all duration-500 ease-out ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`} style={{ transitionDelay: `${150 + sectionIndex * 100}ms` }}>
-              
-              {/* Section Header */}
-              <Card className="mb-2">
-                <CardContent className="p-4">
-                  {editingSectionId === section.id ? (
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        value={editSectionTitle}
-                        onChange={(e) => setEditSectionTitle(e.target.value)}
-                        className="flex-1"
-                        autoFocus
-                      />
-                      <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" onClick={() => handleSaveSectionEdit(section.id)}>
-                        <Check className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-base sm:text-lg font-semibold text-foreground">
-                        {section.title}
-                      </h2>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditSection(section)}
-                        className="hover:bg-primary/10 hover:text-primary"
-                      >
-                        <Pencil className="w-4 h-4" />
-                        <span className="ml-1 hidden sm:inline">Edit</span>
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Questions in Section */}
-              <div className="space-y-2 pl-4 border-l-2 border-muted ml-4">
+          {sections.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">No sections yet. Create one to get started!</p>
+            </div>
+          ) : (
+            sections.map((section, sectionIndex) => (
+              <div key={section.id} className={`transition-all duration-500 ease-out ${
+                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`} style={{ transitionDelay: `${150 + sectionIndex * 100}ms` }}>
                 
-                {/* Add Question at beginning of section */}
-                {showTypeSelector?.sectionId === section.id && showTypeSelector?.questionIndex === 0 ? (
-                  <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-                    <CardContent className="p-4 space-y-3">
-                      <p className="text-sm font-medium text-foreground mb-2">Select Question Type:</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {questionTypes.map((type) => {
-                          const Icon = type.icon
-                          return (
-                            <button
-                              key={type.id}
-                              onClick={() => handleSelectType(type.id as QuestionType)}
-                              className="flex items-center gap-2 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left"
-                            >
-                              <Icon className="w-4 h-4 text-primary" />
-                              <span className="text-xs sm:text-sm font-medium">{type.label}</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                      <div className="flex justify-end pt-2">
-                        <Button variant="ghost" size="sm" onClick={handleCancelTypeSelector}>
-                          <X className="w-4 h-4 mr-1" />
-                          Cancel
+                {/* Section Header */}
+                <Card className="mb-2">
+                  <CardContent className="p-4">
+                    {editingSectionId === section.id ? (
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          value={editSectionTitle}
+                          onChange={(e) => setEditSectionTitle(e.target.value)}
+                          className="flex-1"
+                          autoFocus
+                        />
+                        <Button variant="ghost" size="sm" onClick={handleCancelSectionEdit}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" onClick={() => handleSaveSectionEdit(section.id)}>
+                          <Check className="w-4 h-4" />
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <button
-                    onClick={() => handleShowTypeSelector(section.id, 0)}
-                    className="w-full py-2 border-2 border-dashed border-muted-foreground/20 rounded-lg text-muted-foreground hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all duration-200 flex items-center justify-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm font-medium">Add Question</span>
-                  </button>
-                )}
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-base sm:text-lg font-semibold text-foreground">
+                          {section.title}
+                        </h2>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditSection(section)}
+                            className="hover:bg-primary/10 hover:text-primary"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            <span className="ml-1 hidden sm:inline">Edit</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteSection(section.id)}
+                            className="hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span className="ml-1 hidden sm:inline">Delete</span>
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-                {section.questions.map((question, questionIndex) => (
-                  <div key={question.id}>
-                    {/* Question Card */}
-                    <Card className="border border-border hover:shadow-md transition-shadow duration-200">
-                      <CardContent className="p-4">
-                        {editingId === question.id ? (
-                          <div className="space-y-3">
-                            <Textarea
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              className="min-h-[80px] resize-none"
-                              autoFocus
-                            />
-                            <div className="flex gap-2 justify-end">
-                              <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
-                                <X className="w-4 h-4 mr-1" />
-                                Cancel
-                              </Button>
-                              <Button size="sm" onClick={() => handleSaveEdit(section.id, question.id)}>
-                                <Check className="w-4 h-4 mr-1" />
-                                Save
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
+                {/* Questions in Section */}
+                <div className="space-y-2 pl-4 border-l-2 border-muted ml-4">
+                  
+                  {/* Add Question Button */}
+                  {showTypeSelector?.sectionId === section.id ? (
+                    <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+                      <CardContent className="p-4 space-y-3">
+                        <p className="text-sm font-medium text-foreground mb-2">Select Question Type:</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {questionTypes.map((type) => {
+                            const Icon = type.icon
+                            return (
+                              <button
+                                key={type.id}
+                                onClick={() => handleSelectType(type.id as QuestionType)}
+                                className="flex items-center gap-2 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left"
+                              >
+                                <Icon className="w-4 h-4 text-primary" />
+                                <span className="text-xs sm:text-sm font-medium">{type.label}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <div className="flex justify-end pt-2">
+                          <Button variant="ghost" size="sm" onClick={handleCancelTypeSelector}>
+                            <X className="w-4 h-4 mr-1" />
+                            Cancel
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <button
+                      onClick={() => handleShowTypeSelector(section.id)}
+                      className="w-full py-2 border-2 border-dashed border-muted-foreground/20 rounded-lg text-muted-foreground hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all duration-200 flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-medium">Add Question</span>
+                    </button>
+                  )}
+
+                  {/* Questions */}
+                  {section.questions && section.questions.length > 0 ? (
+                    section.questions.map((question, questionIndex) => (
+                      <Card key={question.id} className="border border-border hover:shadow-md transition-shadow duration-200">
+                        <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex gap-3 flex-1">
                               <span className="text-sm font-semibold text-muted-foreground min-w-[24px]">
@@ -401,103 +459,64 @@ export default function QuestionsPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleEdit(question)}
-                                className="hover:bg-primary/10 hover:text-primary"
+                                onClick={() => handleDeleteQuestion(question.id, section.id)}
+                                className="hover:bg-destructive/10 hover:text-destructive"
                               >
-                                <Pencil className="w-4 h-4" />
-                                <span className="ml-1 hidden sm:inline">Edit</span>
+                                <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           </div>
-                        )}
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No questions yet
+                    </div>
+                  )}
+                </div>
+
+                {/* Add Section after */}
+                <div className="mt-4">
+                  {addingSectionAt === sectionIndex + 1 ? (
+                    <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+                      <CardContent className="p-4 space-y-3">
+                        <Input
+                          placeholder="Enter section title..."
+                          value={newSectionTitle}
+                          onChange={(e) => setNewSectionTitle(e.target.value)}
+                          autoFocus
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="ghost" size="sm" onClick={handleCancelAddSection}>
+                            <X className="w-4 h-4 mr-1" />
+                            Cancel
+                          </Button>
+                          <Button size="sm" onClick={() => handleSaveSection(sectionIndex + 1)}>
+                            <Check className="w-4 h-4 mr-1" />
+                            Save
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
-
-                    {/* Add Question after this question */}
-                    <div className="mt-2">
-                      {showTypeSelector?.sectionId === section.id && showTypeSelector?.questionIndex === questionIndex + 1 ? (
-                        <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-                          <CardContent className="p-4 space-y-3">
-                            <p className="text-sm font-medium text-foreground mb-2">Select Question Type:</p>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {questionTypes.map((type) => {
-                                const Icon = type.icon
-                                return (
-                                  <button
-                                    key={type.id}
-                                    onClick={() => handleSelectType(type.id as QuestionType)}
-                                    className="flex items-center gap-2 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left"
-                                  >
-                                    <Icon className="w-4 h-4 text-primary" />
-                                    <span className="text-xs sm:text-sm font-medium">{type.label}</span>
-                                  </button>
-                                )
-                              })}
-                            </div>
-                            <div className="flex justify-end pt-2">
-                              <Button variant="ghost" size="sm" onClick={handleCancelTypeSelector}>
-                                <X className="w-4 h-4 mr-1" />
-                                Cancel
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ) : (
-                        <button
-                          onClick={() => handleShowTypeSelector(section.id, questionIndex + 1)}
-                          className="w-full py-2 border-2 border-dashed border-muted-foreground/20 rounded-lg text-muted-foreground hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all duration-200 flex items-center justify-center gap-2"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span className="text-sm font-medium">Add Question</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  ) : (
+                    <button
+                      onClick={() => handleAddSectionAt(sectionIndex + 1)}
+                      className="w-full py-2 border-2 border-dashed border-muted-foreground/20 rounded-lg text-muted-foreground hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all duration-200 flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-medium">Add Section</span>
+                    </button>
+                  )}
+                </div>
               </div>
-
-              {/* Add Section after this section */}
-              <div className="mt-4">
-                {addingSectionAt === sectionIndex + 1 ? (
-                  <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-                    <CardContent className="p-4 space-y-3">
-                      <Input
-                        placeholder="Enter section title..."
-                        value={newSectionTitle}
-                        onChange={(e) => setNewSectionTitle(e.target.value)}
-                        autoFocus
-                      />
-                      <div className="flex gap-2 justify-end">
-                        <Button variant="ghost" size="sm" onClick={handleCancelAddSection}>
-                          <X className="w-4 h-4 mr-1" />
-                          Cancel
-                        </Button>
-                        <Button size="sm" onClick={() => handleSaveSection(sectionIndex + 1)}>
-                          <Check className="w-4 h-4 mr-1" />
-                          Save
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <button
-                    onClick={() => handleAddSectionAt(sectionIndex + 1)}
-                    className="w-full py-3 border-2 border-dashed border-muted-foreground/20 rounded-lg text-muted-foreground hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all duration-200 flex items-center justify-center gap-2"
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                    <span className="text-sm font-medium">Add New Section</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className={`py-6 text-center transition-all duration-700 ease-out ${
-        mounted ? "opacity-100" : "opacity-0"
-      }`} style={{ transitionDelay: "400ms" }}>
+      <footer className="py-6 text-center mt-12">
         <p className="text-muted-foreground text-xs sm:text-sm tracking-[0.2em] uppercase font-semibold">
           imli
         </p>

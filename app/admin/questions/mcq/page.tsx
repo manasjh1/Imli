@@ -16,9 +16,25 @@ interface Option {
   isCorrect: boolean
 }
 
+interface Class {
+  id: string
+  name: string
+}
+
+interface Subject {
+  id: string
+  name: string
+}
+
 export default function MCQEditorPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [sectionId, setSectionId] = useState<string>("")
+  const [classId, setClassId] = useState<string>("")
+  const [subjectId, setSubjectId] = useState<string>("")
+  const [classes, setClasses] = useState<Class[]>([])
+  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [loading, setLoading] = useState(false)
   
   // Question settings
   const [questionText, setQuestionText] = useState("")
@@ -33,6 +49,35 @@ export default function MCQEditorPage() {
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 50)
     return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    // Fetch classes and subjects
+    const fetchData = async () => {
+      try {
+        const [classRes, subjectRes] = await Promise.all([
+          fetch("/api/classes"),
+          fetch("/api/subjects"),
+        ])
+        const classData = await classRes.json()
+        const subjectData = await subjectRes.json()
+        setClasses(classData)
+        setSubjects(subjectData)
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      }
+    }
+
+    fetchData()
+
+    // Get params from URL
+    const params = new URLSearchParams(window.location.search)
+    const sid = params.get("sectionId")
+    const cid = params.get("classId")
+    const subid = params.get("subjectId")
+    if (sid) setSectionId(sid)
+    if (cid) setClassId(cid)
+    if (subid) setSubjectId(subid)
   }, [])
 
   const handleOptionChange = (id: number, text: string) => {
@@ -63,9 +108,72 @@ export default function MCQEditorPage() {
     }
   }
 
-  const handleSave = () => {
-    // Save logic here
-    router.push("/admin/questions")
+  const handleSave = async () => {
+    if (!questionText.trim()) {
+      alert("Please enter a question")
+      return
+    }
+
+    const filledOpts = options.filter(opt => opt.text.trim())
+    if (filledOpts.length < 2) {
+      alert("Please provide at least 2 options")
+      return
+    }
+
+    if (!filledOpts.some(opt => opt.isCorrect)) {
+      alert("Please mark at least one option as correct")
+      return
+    }
+
+    if (!classId) {
+      alert("Please select a class")
+      return
+    }
+
+    if (!subjectId) {
+      alert("Please select a subject")
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Create question
+      const questionRes = await fetch("/api/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: questionText,
+          type: "mcq",
+          sectionId,
+          classId,
+          subjectId,
+          data: { allowMultiple },
+        }),
+      })
+
+      if (!questionRes.ok) throw new Error("Failed to save question")
+      const question = await questionRes.json()
+
+      // Create options
+      for (const opt of filledOpts) {
+        await fetch("/api/question-options", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            questionId: question.id,
+            text: opt.text,
+            isCorrect: opt.isCorrect,
+          }),
+        })
+      }
+
+      router.push("/admin/questions")
+    } catch (error) {
+      console.error("Error saving question:", error)
+      alert("Failed to save question")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filledOptions = options.filter(opt => opt.text.trim())
@@ -101,9 +209,9 @@ export default function MCQEditorPage() {
                 </h1>
               </div>
             </div>
-            <Button onClick={handleSave} className="gap-2">
+            <Button onClick={handleSave} disabled={loading} className="gap-2">
               <Check className="w-4 h-4" />
-              Save Question
+              {loading ? "Saving..." : "Save Question"}
             </Button>
           </div>
         </div>
@@ -122,6 +230,42 @@ export default function MCQEditorPage() {
                 <CardTitle className="text-lg">Question Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Class Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="class">Class</Label>
+                  <select
+                    id="class"
+                    value={classId}
+                    onChange={(e) => setClassId(e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                  >
+                    <option value="">Select a class</option>
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Subject Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Subject</Label>
+                  <select
+                    id="subject"
+                    value={subjectId}
+                    onChange={(e) => setSubjectId(e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                  >
+                    <option value="">Select a subject</option>
+                    {subjects.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Question Text */}
                 <div className="space-y-2">
                   <Label htmlFor="question">Question Text</Label>
