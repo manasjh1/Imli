@@ -15,13 +15,41 @@ function ParagraphReadingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const sectionId = searchParams.get("sectionId")
+  const questionId = searchParams.get("questionId")
+  const isEditMode = !!questionId
   
   const [mounted, setMounted] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(isEditMode)
   const [questionTitle, setQuestionTitle] = useState("Read the Paragraph")
   const [subtitle, setSubtitle] = useState("Oral Reading Fluency (ORF)")
   const [instruction, setInstruction] = useState("Read the following paragraph aloud clearly and fluently.")
   const [paragraph, setParagraph] = useState("")
+
+  // Load existing question data if editing
+  useEffect(() => {
+    if (questionId) {
+      const loadQuestion = async () => {
+        try {
+          const res = await fetch(`/api/questions?id=${questionId}`)
+          if (res.ok) {
+            const data = await res.json()
+            setQuestionTitle(data.text || "Read the Paragraph")
+            if (data.data) {
+              setSubtitle(data.data.subtitle || "")
+              setInstruction(data.data.instruction || "")
+              setParagraph(data.data.paragraph || "")
+            }
+          }
+        } catch (error) {
+          console.error("Error loading question:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+      loadQuestion()
+    }
+  }, [questionId])
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 50)
@@ -29,7 +57,7 @@ function ParagraphReadingContent() {
   }, [])
 
   const handleSave = async () => {
-    if (!sectionId) {
+    if (!sectionId && !isEditMode) {
       alert("No section selected")
       return
     }
@@ -41,20 +69,36 @@ function ParagraphReadingContent() {
 
     setSaving(true)
     try {
-      const res = await fetch("/api/questions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          section_id: sectionId,
-          text: questionTitle,
-          type: "paragraph_reading",
-          data: {
-            subtitle,
-            instruction,
-            paragraph: paragraph.trim(),
-          },
-        }),
-      })
+      const questionData = {
+        text: questionTitle,
+        type: "paragraph_reading",
+        data: {
+          subtitle,
+          instruction,
+          paragraph: paragraph.trim(),
+        },
+      }
+
+      let res
+      if (isEditMode) {
+        res = await fetch("/api/questions", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: questionId,
+            ...questionData,
+          }),
+        })
+      } else {
+        res = await fetch("/api/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            section_id: sectionId,
+            ...questionData,
+          }),
+        })
+      }
 
       if (res.ok) {
         router.push("/admin/questions")
@@ -108,9 +152,15 @@ function ParagraphReadingContent() {
           mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}>
           <CardHeader>
-            <CardTitle>Create Paragraph Reading Question</CardTitle>
+            <CardTitle>{isEditMode ? "Edit" : "Create"} Paragraph Reading Question</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
             {/* Question Title */}
             <div className="space-y-2">
               <Label htmlFor="title">Question Title</Label>
@@ -186,9 +236,11 @@ function ParagraphReadingContent() {
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                Save Question
+                {isEditMode ? "Update" : "Save"} Question
               </Button>
             </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </main>

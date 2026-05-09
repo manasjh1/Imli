@@ -14,9 +14,12 @@ function WordReadingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const sectionId = searchParams.get("sectionId")
+  const questionId = searchParams.get("questionId")
+  const isEditMode = !!questionId
   
   const [mounted, setMounted] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(isEditMode)
   const [questionTitle, setQuestionTitle] = useState("Read the Following Words")
   const [instruction, setInstruction] = useState("Read each word aloud clearly. Click on each word after you read it.")
   const [words, setWords] = useState<string[][]>([
@@ -26,6 +29,38 @@ function WordReadingContent() {
     ["", "", "", ""],
     ["", "", "", ""],
   ])
+
+  // Load existing question data if editing
+  useEffect(() => {
+    if (questionId) {
+      const loadQuestion = async () => {
+        try {
+          const res = await fetch(`/api/questions?id=${questionId}`)
+          if (res.ok) {
+            const data = await res.json()
+            setQuestionTitle(data.text || "Read the Following Words")
+            if (data.data) {
+              setInstruction(data.data.instruction || "")
+              if (data.data.words && data.data.words.length > 0) {
+                // Ensure each row has 4 columns
+                const normalizedWords = data.data.words.map((row: string[]) => {
+                  const newRow = [...row]
+                  while (newRow.length < 4) newRow.push("")
+                  return newRow.slice(0, 4)
+                })
+                setWords(normalizedWords)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error loading question:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+      loadQuestion()
+    }
+  }, [questionId])
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 50)
@@ -49,7 +84,7 @@ function WordReadingContent() {
   }
 
   const handleSave = async () => {
-    if (!sectionId) {
+    if (!sectionId && !isEditMode) {
       alert("No section selected")
       return
     }
@@ -62,19 +97,35 @@ function WordReadingContent() {
 
     setSaving(true)
     try {
-      const res = await fetch("/api/questions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          section_id: sectionId,
-          text: questionTitle,
-          type: "word_reading",
-          data: {
-            instruction,
-            words: words.filter(row => row.some(w => w.trim())),
-          },
-        }),
-      })
+      const questionData = {
+        text: questionTitle,
+        type: "word_reading",
+        data: {
+          instruction,
+          words: words.filter(row => row.some(w => w.trim())),
+        },
+      }
+
+      let res
+      if (isEditMode) {
+        res = await fetch("/api/questions", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: questionId,
+            ...questionData,
+          }),
+        })
+      } else {
+        res = await fetch("/api/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            section_id: sectionId,
+            ...questionData,
+          }),
+        })
+      }
 
       if (res.ok) {
         router.push("/admin/questions")
@@ -126,9 +177,15 @@ function WordReadingContent() {
           mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}>
           <CardHeader>
-            <CardTitle>Create Word Reading Question</CardTitle>
+            <CardTitle>{isEditMode ? "Edit" : "Create"} Word Reading Question</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
             {/* Question Title */}
             <div className="space-y-2">
               <Label htmlFor="title">Question Title</Label>
@@ -224,9 +281,11 @@ function WordReadingContent() {
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                Save Question
+                {isEditMode ? "Update" : "Save"} Question
               </Button>
             </div>
+            </>
+            )}
           </CardContent>
         </Card>
       </main>

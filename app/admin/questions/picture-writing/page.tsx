@@ -14,10 +14,13 @@ function PictureWritingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const sectionId = searchParams.get("sectionId")
+  const questionId = searchParams.get("questionId")
+  const isEditMode = !!questionId
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [mounted, setMounted] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(isEditMode)
   const [uploading, setUploading] = useState(false)
   const [questionTitle, setQuestionTitle] = useState("Write Five Words")
   const [subtitle, setSubtitle] = useState("Writing Assessment")
@@ -25,6 +28,33 @@ function PictureWritingContent() {
   const [imageUrl, setImageUrl] = useState("")
   const [imageDescription, setImageDescription] = useState("")
   const [wordCount, setWordCount] = useState(5)
+
+  // Load existing question data if editing
+  useEffect(() => {
+    if (questionId) {
+      const loadQuestion = async () => {
+        try {
+          const res = await fetch(`/api/questions?id=${questionId}`)
+          if (res.ok) {
+            const data = await res.json()
+            setQuestionTitle(data.text || "Write Five Words")
+            if (data.data) {
+              setSubtitle(data.data.subtitle || "")
+              setInstruction(data.data.instruction || "")
+              setImageUrl(data.data.imageUrl || "")
+              setImageDescription(data.data.imageDescription || "")
+              setWordCount(data.data.wordCount || 5)
+            }
+          }
+        } catch (error) {
+          console.error("Error loading question:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+      loadQuestion()
+    }
+  }, [questionId])
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 50)
@@ -63,7 +93,7 @@ function PictureWritingContent() {
   }
 
   const handleSave = async () => {
-    if (!sectionId) {
+    if (!sectionId && !isEditMode) {
       alert("No section selected")
       return
     }
@@ -75,22 +105,38 @@ function PictureWritingContent() {
 
     setSaving(true)
     try {
-      const res = await fetch("/api/questions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          section_id: sectionId,
-          text: questionTitle,
-          type: "picture_writing",
-          data: {
-            subtitle,
-            instruction,
-            imageUrl,
-            imageDescription,
-            wordCount,
-          },
-        }),
-      })
+      const questionData = {
+        text: questionTitle,
+        type: "picture_writing",
+        data: {
+          subtitle,
+          instruction,
+          imageUrl,
+          imageDescription,
+          wordCount,
+        },
+      }
+
+      let res
+      if (isEditMode) {
+        res = await fetch("/api/questions", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: questionId,
+            ...questionData,
+          }),
+        })
+      } else {
+        res = await fetch("/api/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            section_id: sectionId,
+            ...questionData,
+          }),
+        })
+      }
 
       if (res.ok) {
         router.push("/admin/questions")
@@ -142,9 +188,15 @@ function PictureWritingContent() {
           mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}>
           <CardHeader>
-            <CardTitle>Create Picture Writing Question</CardTitle>
+            <CardTitle>{isEditMode ? "Edit" : "Create"} Picture Writing Question</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
             {/* Question Title */}
             <div className="space-y-2">
               <Label htmlFor="title">Question Title</Label>
@@ -293,9 +345,11 @@ function PictureWritingContent() {
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                Save Question
+                {isEditMode ? "Update" : "Save"} Question
               </Button>
             </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </main>
