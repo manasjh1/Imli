@@ -1,15 +1,25 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Globe, ChevronDown } from "lucide-react"
+import { useLanguage, LANGUAGES, type Language } from "@/lib/i18n"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function LoginPage() {
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
+  const { language, setLanguage, t, dir } = useLanguage()
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -23,8 +33,47 @@ export default function LoginPage() {
     router.push("/dashboard")
   }
 
+  const handleLanguageChange = (lang: Language) => {
+    setLanguage(lang)
+  }
+
   return (
-    <main className="min-h-svh flex flex-col bg-background overflow-hidden">
+    <main className="min-h-svh flex flex-col bg-background overflow-hidden" dir={dir}>
+      {/* Language Selector - Top Right */}
+      <div 
+        className={`absolute top-4 ${dir === "rtl" ? "left-4" : "right-4"} transition-all duration-600 ease-out ${
+          mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+        }`}
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 text-xs sm:text-sm"
+            >
+              <Globe className="w-4 h-4" />
+              <span>{LANGUAGES[language].nativeName}</span>
+              <ChevronDown className="w-3 h-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={dir === "rtl" ? "start" : "end"} className="min-w-[140px]">
+            {(Object.keys(LANGUAGES) as Language[]).map((lang) => (
+              <DropdownMenuItem
+                key={lang}
+                onClick={() => handleLanguageChange(lang)}
+                className={`cursor-pointer ${language === lang ? "bg-accent" : ""}`}
+              >
+                <span className="flex-1">{LANGUAGES[lang].nativeName}</span>
+                {language === lang && (
+                  <span className="text-primary text-xs">&#10003;</span>
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       {/* Header with logo */}
       <header 
         className={`flex justify-center pt-8 sm:pt-12 md:pt-16 transition-all duration-600 ease-out ${
@@ -50,7 +99,7 @@ export default function LoginPage() {
             }`}
           >
             <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
-              Welcome Back
+              {t.auth.login}
             </h1>
           </div>
 
@@ -61,11 +110,11 @@ export default function LoginPage() {
                 mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               }`}
             >
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t.auth.email}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t.auth.email}
                 required
                 className="transition-shadow duration-200 focus:shadow-md"
               />
@@ -77,11 +126,11 @@ export default function LoginPage() {
                 mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               }`}
             >
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t.auth.password}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t.auth.password}
                 required
                 className="transition-shadow duration-200 focus:shadow-md"
               />
@@ -98,10 +147,27 @@ export default function LoginPage() {
                 className="w-full transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]" 
                 size="lg"
               >
-                Login
+                {t.auth.loginButton}
               </Button>
             </div>
           </form>
+
+          {/* Register Link */}
+          <div 
+            className={`text-center transition-all duration-500 delay-300 ease-out ${
+              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+          >
+            <p className="text-muted-foreground text-sm">
+              {t.auth.noAccount}{" "}
+              <Link 
+                href="/register" 
+                className="text-foreground font-medium hover:underline underline-offset-4 transition-colors"
+              >
+                {t.auth.register}
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
 
@@ -112,7 +178,7 @@ export default function LoginPage() {
         }`}
       >
         <p className="text-muted-foreground text-xs sm:text-sm tracking-[0.2em] uppercase font-semibold">
-          imli
+          {t.appName}
         </p>
       </footer>
     </main>

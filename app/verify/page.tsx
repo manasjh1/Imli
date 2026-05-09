@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { useLanguage } from "@/lib/i18n"
 
 export default function VerifyPage() {
   const [mounted, setMounted] = useState(false)
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
   const router = useRouter()
+  const { t, dir } = useLanguage()
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -21,7 +23,7 @@ export default function VerifyPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    router.push("/success")
+    router.push("/dashboard")
   }
 
   const handleChange = (index: number, value: string) => {
@@ -65,7 +67,7 @@ export default function VerifyPage() {
   }
 
   return (
-    <main className="min-h-svh flex flex-col bg-background overflow-hidden">
+    <main className="min-h-svh flex flex-col bg-background overflow-hidden" dir={dir}>
       {/* Header with logo */}
       <header 
         className={`flex justify-center pt-8 sm:pt-12 md:pt-16 transition-all duration-600 ease-out ${
@@ -91,10 +93,10 @@ export default function VerifyPage() {
             }`}
           >
             <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
-              Verify Email
+              {t.verify.title}
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Enter the 6-digit code sent to your email
+              {t.verify.subtitle}
             </p>
           </div>
 
@@ -134,7 +136,7 @@ export default function VerifyPage() {
                 size="lg"
                 disabled={otp.some(digit => !digit)}
               >
-                Verify
+                {t.verify.verifyButton}
               </Button>
             </div>
 
@@ -145,12 +147,11 @@ export default function VerifyPage() {
               }`}
             >
               <p className="text-muted-foreground text-sm">
-                {"Didn't receive the code? "}
                 <button 
                   type="button" 
                   className="text-foreground font-medium hover:underline underline-offset-4 transition-colors"
                 >
-                  Resend
+                  {t.verify.resend}
                 </button>
               </p>
             </div>
@@ -165,7 +166,7 @@ export default function VerifyPage() {
         }`}
       >
         <p className="text-muted-foreground text-xs sm:text-sm tracking-[0.2em] uppercase font-semibold">
-          imli
+          {t.appName}
         </p>
       </footer>
     </main>

@@ -6,16 +6,22 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Check, RotateCcw, Loader } from 'lucide-react'
+import { UserHeader } from '@/components/user-header'
+import { useLanguage } from '@/lib/i18n'
 
 interface QuestionOption {
   id: string
   text: string
+  text_te?: string
+  text_ur?: string
   is_correct: boolean
 }
 
 interface Question {
   id: string
   text: string
+  text_te?: string
+  text_ur?: string
   type: string
   subject_id: string
   data: any
@@ -31,6 +37,7 @@ export function QuizContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const classId = searchParams.get('classId')
+  const { t, dir, language } = useLanguage()
 
   const [mounted, setMounted] = useState(false)
   const [questions, setQuestions] = useState<Question[]>([])
@@ -41,6 +48,26 @@ export function QuizContent() {
   const [showResults, setShowResults] = useState(false)
   const [score, setScore] = useState(0)
   const [className, setClassName] = useState('')
+
+  // Get localized text based on current language
+  const getLocalizedText = (item: { text: string; text_te?: string; text_ur?: string }) => {
+    if (language === 'te' && item.text_te) return item.text_te
+    if (language === 'ur' && item.text_ur) return item.text_ur
+    return item.text
+  }
+
+  // Get translated class name based on language
+  const getLocalizedClassName = (name: string) => {
+    const classKeys = ['class1', 'class2', 'class3', 'class4', 'class5'] as const
+    const match = name.match(/Class\s*(\d+)/i)
+    if (match) {
+      const index = parseInt(match[1]) - 1
+      if (index >= 0 && index < classKeys.length) {
+        return t.test.classes[classKeys[index]]
+      }
+    }
+    return name
+  }
 
   // Load questions from database
   useEffect(() => {
@@ -130,24 +157,29 @@ export function QuizContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center" dir={dir}>
         <div className="text-center">
           <Loader className="w-8 h-8 animate-spin mx-auto text-primary" />
-          <p className="mt-2 text-muted-foreground">Loading quiz...</p>
+          <p className="mt-2 text-muted-foreground">{t.loading}</p>
         </div>
       </div>
     )
   }
 
+  const localizedClassName = getLocalizedClassName(className)
+
   if (totalQuestions === 0) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center" dir={dir}>
         <Card className="max-w-md w-full mx-4">
           <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground mb-4">No quiz questions available for {className} yet.</p>
-            <p className="text-sm text-muted-foreground mb-6">Please ask the administrator to add questions.</p>
+            <p className="text-muted-foreground mb-4">
+              {language === 'en' && `No quiz questions available for ${localizedClassName} yet.`}
+              {language === 'te' && `${localizedClassName} కోసం క్విజ్ ప్రశ్నలు ఇంకా అందుబాటులో లేవు.`}
+              {language === 'ur' && `${localizedClassName} کے لیے ابھی کوئی کوئز سوالات دستیاب نہیں ہیں۔`}
+            </p>
             <Button onClick={() => router.push('/test')} variant="outline">
-              Back to Classes
+              {t.back}
             </Button>
           </CardContent>
         </Card>
@@ -158,46 +190,56 @@ export function QuizContent() {
   // Quiz Start Screen
   if (!started) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className={`max-w-2xl w-full transition-all duration-700 ${
-          mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-        }`}>
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Image
-                src="/images/imili-logo.avif"
-                alt="Imili Logo"
-                width={64}
-                height={64}
-                className="w-16 h-16 object-contain"
-              />
-            </div>
-            <CardTitle className="text-3xl">Start {className} Quiz</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <p className="text-muted-foreground">
-                Welcome to the {className} Quiz! Test your knowledge across all subjects.
-              </p>
-              <div className="grid grid-cols-1 gap-4 mt-4">
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Total Questions</p>
-                  <p className="text-2xl font-bold text-foreground">{totalQuestions}</p>
+      <div className="min-h-screen bg-background" dir={dir}>
+        <UserHeader />
+        <div className="flex items-center justify-center p-4 min-h-[calc(100vh-80px)]">
+          <Card className={`max-w-2xl w-full transition-all duration-700 ${
+            mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}>
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <Image
+                  src="/images/imili-logo.avif"
+                  alt="Imili Logo"
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 object-contain"
+                />
+              </div>
+              <CardTitle className="text-3xl">
+                {language === 'en' && `Start ${localizedClassName} Quiz`}
+                {language === 'te' && `${localizedClassName} క్విజ్ ప్రారంభించండి`}
+                {language === 'ur' && `${localizedClassName} کوئز شروع کریں`}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <p className="text-muted-foreground">
+                  {language === 'en' && `Welcome to the ${localizedClassName} Quiz! Test your knowledge across all subjects.`}
+                  {language === 'te' && `${localizedClassName} క్విజ్‌కు స్వాగతం! అన్ని విషయాలలో మీ జ్ఞానాన్ని పరీక్షించండి.`}
+                  {language === 'ur' && `${localizedClassName} کوئز میں خوش آمدید! تمام مضامین میں اپنے علم کی جانچ کریں۔`}
+                </p>
+                <div className="grid grid-cols-1 gap-4 mt-4">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'en' && 'Total Questions'}
+                      {language === 'te' && 'మొత్తం ప్రశ్నలు'}
+                      {language === 'ur' && 'کل سوالات'}
+                    </p>
+                    <p className="text-2xl font-bold text-foreground">{totalQuestions}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-3 pt-4">
-              <p className="text-xs text-muted-foreground text-center">
-                You will need to answer all questions. Your score will be calculated at the end.
-              </p>
-              <Button onClick={handleStartQuiz} size="lg" className="w-full">
-                <Check className="w-4 h-4 mr-2" />
-                Start Quiz
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-3 pt-4">
+                <Button onClick={handleStartQuiz} size="lg" className="w-full">
+                  <Check className="w-4 h-4 me-2" />
+                  {t.test.startQuiz}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -208,80 +250,86 @@ export function QuizContent() {
     const isPassed = percentage >= 50
 
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className={`max-w-2xl w-full transition-all duration-700 ${
-          mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-        }`}>
-          <CardHeader className="text-center">
-            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-4 ${
-              isPassed ? 'bg-green-100' : 'bg-orange-100'
-            }`}>
-              <span className={`text-4xl font-bold ${isPassed ? 'text-green-600' : 'text-orange-600'}`}>
-                {percentage}%
-              </span>
-            </div>
-            <CardTitle className="text-3xl">
-              {isPassed ? 'Great Job!' : 'Good Effort!'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center space-y-2">
-              <p className="text-lg font-semibold text-foreground">
-                You scored {score} out of {totalQuestions} questions correctly.
-              </p>
-              <p className="text-muted-foreground">
-                {isPassed 
-                  ? 'You passed the quiz! ' 
-                  : 'Keep practicing to improve your score. '}
-                Try again to see if you can do better!
-              </p>
-            </div>
-
-            {/* Question Review */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-foreground">Answer Review</h3>
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {questions.map((question, idx) => {
-                  const userAnswer = answers.find(a => a.questionId === question.id)
-                  const selectedOption = question.question_options?.find(o => o.id === userAnswer?.selectedOptionId)
-                  const isCorrect = selectedOption?.is_correct
-
-                  return (
-                    <div key={question.id} className="p-3 bg-muted/30 rounded-lg text-sm">
-                      <div className="flex gap-2 items-start mb-1">
-                        <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                          isCorrect ? 'bg-green-500' : 'bg-red-500'
-                        }`}>
-                          {isCorrect ? '✓' : '✗'}
-                        </span>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">Q{idx + 1}</p>
-                          <p className="text-xs text-muted-foreground">{question.text}</p>
-                        </div>
-                      </div>
-                      {userAnswer && (
-                        <p className="text-xs text-muted-foreground ml-7">
-                          Your answer: {selectedOption?.text || 'Not answered'}
-                        </p>
-                      )}
-                    </div>
-                  )
-                })}
+      <div className="min-h-screen bg-background" dir={dir}>
+        <UserHeader />
+        <div className="flex items-center justify-center p-4 min-h-[calc(100vh-80px)]">
+          <Card className={`max-w-2xl w-full transition-all duration-700 ${
+            mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}>
+            <CardHeader className="text-center">
+              <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-4 ${
+                isPassed ? 'bg-green-100' : 'bg-orange-100'
+              }`}>
+                <span className={`text-4xl font-bold ${isPassed ? 'text-green-600' : 'text-orange-600'}`}>
+                  {percentage}%
+                </span>
               </div>
-            </div>
+              <CardTitle className="text-3xl">
+                {t.quiz.results}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-center space-y-2">
+                <p className="text-lg font-semibold text-foreground">
+                  {t.quiz.score}: {score} / {totalQuestions}
+                </p>
+                <p className="text-muted-foreground">
+                  {t.quiz.correct}: {score} | {t.quiz.incorrect}: {totalQuestions - score}
+                </p>
+              </div>
 
-            <div className="flex gap-3">
-              <Button onClick={handleRetake} size="lg" className="flex-1">
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Retake Quiz
-              </Button>
-              <Button onClick={() => router.push('/test')} variant="outline" size="lg" className="flex-1">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Classes
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              {/* Question Review */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm text-foreground">
+                  {language === 'en' && 'Answer Review'}
+                  {language === 'te' && 'సమాధాన సమీక్ష'}
+                  {language === 'ur' && 'جواب کا جائزہ'}
+                </h3>
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {questions.map((question, idx) => {
+                    const userAnswer = answers.find(a => a.questionId === question.id)
+                    const selectedOption = question.question_options?.find(o => o.id === userAnswer?.selectedOptionId)
+                    const isCorrect = selectedOption?.is_correct
+
+                    return (
+                      <div key={question.id} className="p-3 bg-muted/30 rounded-lg text-sm">
+                        <div className="flex gap-2 items-start mb-1">
+                          <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                            isCorrect ? 'bg-green-500' : 'bg-red-500'
+                          }`}>
+                            {isCorrect ? '✓' : '✗'}
+                          </span>
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{t.quiz.question} {idx + 1}</p>
+                            <p className="text-xs text-muted-foreground">{getLocalizedText(question)}</p>
+                          </div>
+                        </div>
+                        {userAnswer && selectedOption && (
+                          <p className="text-xs text-muted-foreground ms-7">
+                            {language === 'en' && `Your answer: ${getLocalizedText(selectedOption)}`}
+                            {language === 'te' && `మీ సమాధానం: ${getLocalizedText(selectedOption)}`}
+                            {language === 'ur' && `آپ کا جواب: ${getLocalizedText(selectedOption)}`}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button onClick={handleRetake} size="lg" className="flex-1">
+                  <RotateCcw className="w-4 h-4 me-2" />
+                  {t.quiz.retakeQuiz}
+                </Button>
+                <Button onClick={() => router.push('/dashboard')} variant="outline" size="lg" className="flex-1">
+                  <ArrowLeft className="w-4 h-4 me-2" />
+                  {t.quiz.backToDashboard}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -295,7 +343,7 @@ export function QuizContent() {
   const progressPercentage = ((currentQuestionIndex + 1) / totalQuestions) * 100
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" dir={dir}>
       {/* Header */}
       <header className={`sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b transition-all duration-500 ${
         mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
@@ -310,7 +358,7 @@ export function QuizContent() {
                 className="gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Back</span>
+                <span className="hidden sm:inline">{t.back}</span>
               </Button>
               <Image
                 src="/images/imili-logo.avif"
@@ -320,11 +368,11 @@ export function QuizContent() {
                 className="w-8 h-8 object-contain"
               />
               <h1 className="text-lg sm:text-xl font-semibold text-foreground">
-                {className} Quiz
+                {localizedClassName}
               </h1>
             </div>
             <div className="text-sm font-medium text-muted-foreground">
-              Question {currentQuestionIndex + 1} of {totalQuestions}
+              {t.quiz.question} {currentQuestionIndex + 1} {t.quiz.of} {totalQuestions}
             </div>
           </div>
           
@@ -345,7 +393,7 @@ export function QuizContent() {
         }`}>
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">{currentQuestion.text}</CardTitle>
+              <CardTitle className="text-2xl">{getLocalizedText(currentQuestion)}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Options */}
@@ -355,7 +403,7 @@ export function QuizContent() {
                     <button
                       key={option.id}
                       onClick={() => handleSelectOption(option.id)}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                      className={`w-full p-4 rounded-lg border-2 transition-all text-start ${
                         userAnswer?.selectedOptionId === option.id
                           ? 'border-primary bg-primary/10'
                           : 'border-border hover:border-primary/50'
@@ -370,7 +418,7 @@ export function QuizContent() {
                           {String.fromCharCode(65 + idx)}
                         </div>
                         <span className="font-medium text-foreground">
-                          {option.text}
+                          {getLocalizedText(option)}
                         </span>
                       </div>
                     </button>
@@ -378,7 +426,9 @@ export function QuizContent() {
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No options available for this question
+                  {language === 'en' && 'No options available for this question'}
+                  {language === 'te' && 'ఈ ప్రశ్నకు ఎంపికలు అందుబాటులో లేవు'}
+                  {language === 'ur' && 'اس سوال کے لیے کوئی آپشن دستیاب نہیں ہیں'}
                 </div>
               )}
 
@@ -390,8 +440,8 @@ export function QuizContent() {
                   disabled={currentQuestionIndex === 0}
                   className="flex-1"
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Previous
+                  <ArrowLeft className="w-4 h-4 me-2" />
+                  {t.previous}
                 </Button>
                 <Button
                   onClick={handleNext}
@@ -400,13 +450,13 @@ export function QuizContent() {
                 >
                   {isLastQuestion ? (
                     <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Finish
+                      <Check className="w-4 h-4 me-2" />
+                      {t.quiz.finish}
                     </>
                   ) : (
                     <>
-                      Next
-                      <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                      {t.next}
+                      <ArrowLeft className="w-4 h-4 ms-2 rotate-180" />
                     </>
                   )}
                 </Button>
