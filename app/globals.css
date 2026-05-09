@@ -122,4 +122,40 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* RTL Support for Urdu */
+  [dir="rtl"] {
+    text-align: right;
+  }
+  
+  [dir="rtl"] .ms-auto {
+    margin-inline-start: auto;
+  }
+  
+  [dir="rtl"] .me-2 {
+    margin-inline-end: 0.5rem;
+  }
+  
+  /* Telugu and Urdu font support */
+  @font-face {
+    font-family: 'Noto Sans Telugu';
+    src: url('https://fonts.gstatic.com/s/notosanstelugu/v26/0FlxVOGZlE2Rrtr-HmgkMWJNjJ5_aSwg.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+  }
+  
+  @font-face {
+    font-family: 'Noto Nastaliq Urdu';
+    src: url('https://fonts.gstatic.com/s/notonastaliqurdu/v20/LhWNMUPbN-oZdNFcBy1-DJYsEoTq5pudQ9L940pGPkB3Qt_-DK2f.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+  }
+  
+  html[lang="te"] body {
+    font-family: 'Noto Sans Telugu', 'Geist', sans-serif;
+  }
+  
+  html[lang="ur"] body {
+    font-family: 'Noto Nastaliq Urdu', 'Geist', sans-serif;
+  }
 }

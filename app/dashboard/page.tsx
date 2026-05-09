@@ -1,14 +1,16 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { ClipboardList, History } from "lucide-react"
+import { UserHeader } from "@/components/user-header"
+import { useLanguage } from "@/lib/i18n"
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false)
   const [userName, setUserName] = useState("")
+  const { t, dir } = useLanguage()
 
   useEffect(() => {
     const storedName = sessionStorage.getItem("userName")
@@ -23,25 +25,13 @@ export default function DashboardPage() {
   }, [])
 
   return (
-    <main className="min-h-svh flex flex-col bg-background">
-      {/* Header */}
-      <header 
-        className={`flex items-center justify-between px-6 sm:px-8 md:px-12 py-4 sm:py-6 transition-all duration-600 ease-out ${
+    <main className="min-h-svh flex flex-col bg-background" dir={dir}>
+      {/* Header with User Info and Language Selector */}
+      <UserHeader 
+        className={`transition-all duration-600 ease-out ${
           mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
         }`}
-      >
-        <Image
-          src="/images/imili-logo.avif"
-          alt="imli Logo"
-          width={80}
-          height={80}
-          priority
-          className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain"
-        />
-        <p className="text-muted-foreground text-xs sm:text-sm tracking-[0.2em] uppercase font-semibold">
-          imli
-        </p>
-      </header>
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col px-6 sm:px-8 md:px-12 py-8 sm:py-12">
@@ -52,7 +42,7 @@ export default function DashboardPage() {
           }`}
         >
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-foreground tracking-tight">
-            Hi {userName || "User"}
+            {t.dashboard.greeting} {userName || "User"}
           </h1>
         </div>
 
@@ -71,7 +61,7 @@ export default function DashboardPage() {
                   <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
                 <h2 className="text-base sm:text-lg font-semibold text-foreground">
-                  Start a Test
+                  {t.dashboard.startTest}
                 </h2>
               </CardContent>
             </Card>
@@ -90,7 +80,7 @@ export default function DashboardPage() {
                   <History className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
                 <h2 className="text-base sm:text-lg font-semibold text-foreground">
-                  Past Tests
+                  {t.dashboard.pastTests}
                 </h2>
               </CardContent>
             </Card>
@@ -105,7 +95,7 @@ export default function DashboardPage() {
         }`}
       >
         <p className="text-muted-foreground text-xs sm:text-sm tracking-[0.2em] uppercase font-semibold">
-          imli
+          {t.appName}
         </p>
       </footer>
     </main>
